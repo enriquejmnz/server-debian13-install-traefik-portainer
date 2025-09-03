@@ -20,6 +20,18 @@ validate_email() {
     fi
 }
 
+# Función para validar el formato de un correo (devuelve 0 si es válido, 1 si no)
+# Usada para bucles de re-intento sin salir del script.
+is_valid_email() {
+    local email=$1
+    if [[ $email =~ ^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$ ]]; then
+        return 0 # Éxito (válido)
+    else
+        return 1 # Fallo (inválido)
+    fi
+}
+
+
 # Función para validar dominio
 validate_domain() {
     local domain=$1
