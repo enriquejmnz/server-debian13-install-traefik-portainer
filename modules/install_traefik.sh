@@ -48,8 +48,16 @@ install_traefik_portainer() {
     traefik_subdomain=${traefik_subdomain:-traefik}
     read -p "Ingrese el subdominio para Portainer (def: portainer): " portainer_subdomain
     portainer_subdomain=${portainer_subdomain:-portainer}
-    read -p "Ingrese el correo para Let's Encrypt: " email_admin
-    validate_email "$email_admin"
+
+    # Bucle de validación para el correo electrónico
+    while true; do
+        read -p "Ingrese el correo para Let's Encrypt: " email_admin
+        if is_valid_email "$email_admin"; then
+            break
+        else
+            warn "Formato de correo electrónico inválido. Por favor, inténtelo de nuevo."
+        fi
+    done
 
     read -p "Ingrese el nombre de usuario para Traefik: " traefik_user
     read -sp "Ingrese la contraseña para Traefik: " traefik_password; echo
@@ -59,9 +67,11 @@ install_traefik_portainer() {
 
     log "Configurando docker-compose.yml..."
     cat > "$INSTALL_DIR/docker-compose.yml" <<EOF
+# Usando etiquetas de versión estables y recientes para previsibilidad
 version: "3.8"
 services:
   traefik:
+    # Usando la última versión mayor estable de Traefik v3
     image: traefik:v3.0
     container_name: traefik
     restart: unless-stopped
@@ -83,8 +93,10 @@ services:
       - "traefik.http.routers.traefik-secure.rule=Host(\`${traefik_subdomain}.${base_domain}\`)"
       - "traefik.http.routers.traefik-secure.middlewares=user-auth@file"
       - "traefik.http.routers.traefik-secure.service=api@internal"
+
   portainer:
-    image: portainer/portainer-ce:2.19.4
+    # Usando 'latest' para obtener siempre la última versión estable de Portainer CE
+    image: portainer/portainer-ce:latest
     container_name: portainer
     restart: unless-stopped
     depends_on: [traefik]
@@ -102,6 +114,7 @@ services:
       - "traefik.http.routers.portainer-secure.rule=Host(\`${portainer_subdomain}.${base_domain}\`)"
       - "traefik.http.routers.portainer-secure.service=portainer"
       - "traefik.http.services.portainer.loadbalancer.server.port=9000"
+
 networks:
   proxy:
     driver: bridge
@@ -110,6 +123,8 @@ networks:
 EOF
 
     log "Configurando traefik.yml..."
+    # ... (El resto del archivo traefik.yml y dynamic.yml no necesita cambios)
+    # ... (El resto de la función tampoco necesita cambios)
     cat > "$INSTALL_DIR/traefik-data/traefik.yml" <<EOF
 api: { dashboard: true }
 entryPoints:
