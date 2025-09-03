@@ -1,0 +1,8 @@
+server_installer/
+├── main.sh                  # Script principal que muestra el menú y llama a los módulos.
+└── modules/
+    ├── common.sh            # Funciones comunes (logs, colores, validación, etc.).
+    ├── secure_server.sh     # Módulo para asegurar el servidor.
+    ├── install_docker.sh    # Módulo para instalar Docker.
+    ├── install_traefik.sh   # Módulo para instalar Traefik y Portainer.
+    └── update_traefik.sh    # Módulo para actualizar Traefik y Portainer.
