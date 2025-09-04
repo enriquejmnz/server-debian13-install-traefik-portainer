@@ -161,10 +161,22 @@ bantime = 3600
 findtime = 600
 EOF
     check_error $? "Error al configurar fail2ban"
-    if [ "$DEBIAN_VERSION" -ge 13 ]; then
-        echo "sshd_backend = systemd" >> /etc/fail2ban/paths-debian.conf
-        check_error $? "Error al configurar backend systemd para fail2ban"
+        
+if [ "$DEBIAN_VERSION" -ge 13 ]; then
+        local conf_file="/etc/fail2ban/paths-debian.conf"
+        local line_to_add="sshd_backend = systemd"
+        
+        # Crear el archivo si no existe para evitar errores con grep
+        touch "$conf_file"
+        
+        # Agregar la línea solo si no existe ya en el archivo
+        if ! grep -qF -- "$line_to_add" "$conf_file"; then
+            echo "$line_to_add" >> "$conf_file"
+            check_error $? "Error al configurar backend systemd para fail2ban"
+        fi
     fi
+
+  
 
     log "Configurando límites del sistema..."
     cat > /etc/security/limits.conf <<EOF
