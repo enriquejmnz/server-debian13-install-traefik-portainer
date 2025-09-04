@@ -143,7 +143,7 @@ maxretry = 5
 destemail = root@localhost
 sendername = Fail2Ban
 mta = sendmail
-action = %(action_mwl)s
+#action = %(action_mwl)s
 backend = systemd
 [sshd]
 enabled = true
