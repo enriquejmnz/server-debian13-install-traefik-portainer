@@ -1,0 +1,22 @@
+name: Shell lint
+
+on: [push, pull_request]
+
+jobs:
+  lint-shell:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: ShellCheck
+        uses: koalaman/shellcheck-action@v1
+        with:
+          args: 'modules/*.sh main.sh'
+
+      - name: Setup shfmt
+        uses: mvdan/setup-shfmt@v1
+        with:
+          version: '3.7.0'
+
+      - name: shfmt check
+        run: shfmt -d -s -i 2 modules/*.sh main.sh
