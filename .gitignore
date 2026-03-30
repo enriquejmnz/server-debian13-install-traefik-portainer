@@ -1,0 +1,41 @@
+.env
+.env.*
+*.bak
+*.bak.*
+*.backup
+*.tmp
+*.swp
+*.swo
+*~
+
+# Logs locales
+*.log
+
+# Secrets y artefactos locales de Traefik/Portainer
+acme.json
+**/acme.json
+
+# Artefactos locales de Ansible
+ansible/*.retry
+ansible/retry_files/
+ansible/.vault_pass
+ansible/.vault_pass.txt
+ansible/ansible.log
+ansible/inventory/hosts.local.yml
+ansible/inventory/group_vars/all/vault.local.yml
+
+# Python / herramientas
+__pycache__/
+.pytest_cache/
+.mypy_cache/
+.venv/
+venv/
+
+# Editores / SO
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+
+# Archivos generados localmente fuera del repo
+opt/
