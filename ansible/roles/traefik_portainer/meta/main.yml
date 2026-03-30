@@ -1,0 +1,8 @@
+---
+galaxy_info:
+  role_name: traefik_portainer
+  author: local
+  description: Despliegue inicial de Traefik y Portainer.
+  min_ansible_version: "2.14"
+dependencies:
+  - role: docker

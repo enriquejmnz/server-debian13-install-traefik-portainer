@@ -1,0 +1,7 @@
+---
+common_base_packages:
+  - curl
+  - gnupg
+  - lsb-release
+  - ca-certificates
+  - python3-apt

@@ -1,0 +1,8 @@
+---
+- name: Desplegar Traefik y Portainer
+  hosts: all
+  become: true
+  roles:
+    - role: common
+    - role: docker
+    - role: traefik_portainer

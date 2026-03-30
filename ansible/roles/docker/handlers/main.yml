@@ -1,0 +1,4 @@
+---
+- name: Restart Docker
+  ansible.builtin.debug:
+    msg: "Placeholder: reinicio de Docker pendiente de implementación."

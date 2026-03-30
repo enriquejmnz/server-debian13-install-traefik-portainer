@@ -1,0 +1,12 @@
+---
+- name: Placeholder de paquetes de seguridad
+  ansible.builtin.debug:
+    msg: "Pendiente: implementar tasks/packages.yml del role security."
+
+- name: Placeholder de hardening SSH
+  ansible.builtin.debug:
+    msg: "Pendiente: implementar tasks/ssh.yml del role security."
+
+- name: Placeholder de fail2ban y firewall
+  ansible.builtin.debug:
+    msg: "Pendiente: implementar tasks/fail2ban.yml y tasks/ufw.yml del role security."

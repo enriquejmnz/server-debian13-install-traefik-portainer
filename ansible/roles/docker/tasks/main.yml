@@ -1,0 +1,12 @@
+---
+- name: Placeholder del repositorio de Docker
+  ansible.builtin.debug:
+    msg: "Pendiente: implementar tasks/repo.yml del role docker."
+
+- name: Placeholder de instalación de Docker
+  ansible.builtin.debug:
+    msg: "Pendiente: implementar tasks/install.yml del role docker."
+
+- name: Placeholder de daemon y usuario Docker
+  ansible.builtin.debug:
+    msg: "Pendiente: implementar daemon.json, usuarios y directorios del role docker."

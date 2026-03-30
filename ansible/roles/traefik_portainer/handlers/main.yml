@@ -1,0 +1,4 @@
+---
+- name: Recreate containers
+  ansible.builtin.debug:
+    msg: "Placeholder: recreación de contenedores pendiente de implementación."

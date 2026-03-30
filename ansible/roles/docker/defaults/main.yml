@@ -1,0 +1,18 @@
+---
+docker_user: ""
+docker_install_dir: /opt/docker-compose
+docker_log_max_size: "10m"
+docker_log_max_file: "3"
+docker_ulimit_nofile: 64000
+docker_packages:
+  - docker-ce
+  - docker-ce-cli
+  - containerd.io
+  - docker-buildx-plugin
+  - docker-compose-plugin
+docker_old_packages:
+  - docker
+  - docker-engine
+  - docker.io
+  - containerd
+  - runc

@@ -1,0 +1,12 @@
+---
+- name: Placeholder de pull de imágenes
+  ansible.builtin.debug:
+    msg: "Pendiente: implementar pull de imágenes del role update."
+
+- name: Placeholder de redeploy de contenedores
+  ansible.builtin.debug:
+    msg: "Pendiente: implementar redeploy del role update."
+
+- name: Placeholder de limpieza de imágenes
+  ansible.builtin.debug:
+    msg: "Pendiente: implementar prune del role update."

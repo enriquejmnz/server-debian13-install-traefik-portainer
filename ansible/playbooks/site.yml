@@ -1,0 +1,10 @@
+---
+- name: Aplicar configuración completa del servidor
+  hosts: all
+  become: true
+  roles:
+    - role: common
+    - role: security
+    - role: docker
+    - role: traefik_portainer
+    - role: update

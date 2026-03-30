@@ -1,0 +1,8 @@
+---
+galaxy_info:
+  role_name: docker
+  author: local
+  description: Instalación inicial de Docker y Docker Compose.
+  min_ansible_version: "2.14"
+dependencies:
+  - role: common

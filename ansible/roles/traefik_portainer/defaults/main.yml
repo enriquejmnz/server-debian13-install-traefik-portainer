@@ -1,0 +1,13 @@
+---
+install_dir: /opt/traefik-portainer
+traefik_image: traefik:v3.0
+portainer_image: portainer/portainer-ce:2.21.5
+base_domain: ""
+traefik_subdomain: traefik
+portainer_subdomain: portainer
+letsencrypt_email: ""
+traefik_user: ""
+traefik_password: ""
+traefik_auth: ""
+proxy_network: proxy
+proxy_subnet: 172.18.0.0/16

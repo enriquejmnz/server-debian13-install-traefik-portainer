@@ -1,0 +1,48 @@
+---
+# Variables no sensibles de ejemplo para la fase inicial de Ansible.
+
+# === Sistema ===
+timezone: UTC
+system_nofile_limit: 65535
+system_nproc_limit: 65535
+
+# === SSH ===
+ssh_port: 22
+ssh_password_auth: "no"
+ssh_login_grace_time: 120
+ssh_max_auth_tries: 3
+ssh_max_sessions: 10
+ssh_client_alive_interval: 300
+ssh_client_alive_count_max: 2
+
+# === Usuario administrador ===
+admin_user: admin
+admin_ssh_public_key: "{{ vault_admin_ssh_public_key }}"
+
+# === Fail2ban ===
+fail2ban_bantime: 3600
+fail2ban_findtime: 600
+fail2ban_maxretry: 3
+fail2ban_default_maxretry: 5
+
+# === Docker ===
+docker_user: ""
+docker_install_dir: /opt/docker-compose
+docker_log_max_size: "10m"
+docker_log_max_file: "3"
+docker_ulimit_nofile: 64000
+
+# === Traefik + Portainer ===
+install_dir: /opt/traefik-portainer
+traefik_image: traefik:v3.0
+portainer_image: portainer/portainer-ce:2.21.5
+traefik_subdomain: traefik
+portainer_subdomain: portainer
+proxy_network: proxy
+proxy_subnet: 172.18.0.0/16
+base_domain: example.com
+
+# === Variables derivadas de vault ===
+letsencrypt_email: "{{ vault_letsencrypt_email }}"
+traefik_user: "{{ vault_traefik_user }}"
+traefik_password: "{{ vault_traefik_password }}"

@@ -1,0 +1,7 @@
+---
+galaxy_info:
+  role_name: common
+  author: local
+  description: Validaciones y dependencias base para Debian.
+  min_ansible_version: "2.14"
+dependencies: []

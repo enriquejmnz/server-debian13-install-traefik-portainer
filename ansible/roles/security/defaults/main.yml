@@ -1,0 +1,28 @@
+---
+ssh_port: 22
+ssh_password_auth: "no"
+admin_user: admin
+admin_ssh_public_key: ""
+fail2ban_bantime: 3600
+fail2ban_maxretry: 3
+fail2ban_findtime: 600
+system_nofile_limit: 65535
+system_nproc_limit: 65535
+security_packages:
+  - ufw
+  - fail2ban
+  - unattended-upgrades
+  - apt-listchanges
+  - net-tools
+  - sudo
+  - htop
+  - curl
+  - wget
+  - gnupg
+  - lsb-release
+  - ca-certificates
+  - debconf
+  - systemd-timesyncd
+  - auditd
+security_optional_packages:
+  - apticron

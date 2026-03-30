@@ -1,0 +1,12 @@
+---
+- name: Restart SSH
+  ansible.builtin.debug:
+    msg: "Placeholder: reinicio de SSH pendiente de implementación."
+
+- name: Restart fail2ban
+  ansible.builtin.debug:
+    msg: "Placeholder: reinicio de fail2ban pendiente de implementación."
+
+- name: Reload UFW
+  ansible.builtin.debug:
+    msg: "Placeholder: recarga de UFW pendiente de implementación."
