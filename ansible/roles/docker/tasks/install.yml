@@ -1,0 +1,55 @@
+---
+# tasks/install.yml - Instalar Docker Engine y Docker Compose
+- name: Remove old Docker packages
+  ansible.builtin.apt:
+    name:
+      - docker
+      - docker-engine
+      - docker.io
+      - containerd
+      - runc
+      - docker-ce
+      - docker-ce-cli
+      - containerd.io
+      - docker-ce-rootless-extras
+      - docker-buildx-plugin
+      - docker-compose-plugin
+    state: absent
+  failed_when: false
+
+- name: Install Docker Engine and Docker Compose
+  ansible.builtin.apt:
+    name:
+      - docker-ce
+      - docker-ce-cli
+      - containerd.io
+      - docker-buildx-plugin
+      - docker-compose-plugin
+    state: present
+    update_cache: true
+  notify: Restart Docker
+
+- name: Enable and start Docker services
+  ansible.builtin.service:
+    name: "{{ item }}"
+    state: started
+    enabled: true
+  loop:
+    - docker.service
+    - containerd.service
+
+- name: Verify Docker installation
+  ansible.builtin.command: docker --version
+  register: docker_version
+  changed_when: false
+
+- name: Verify Docker Compose installation
+  ansible.builtin.command: docker compose version
+  register: docker_compose_version
+  changed_when: false
+
+- name: Create Docker Compose directory
+  ansible.builtin.file:
+    path: "{{ docker_install_dir }}"
+    state: directory
+    mode: "0755"

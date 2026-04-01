@@ -3,5 +3,18 @@
   "log-opts": {
     "max-size": "{{ docker_log_max_size }}",
     "max-file": "{{ docker_log_max_file }}"
-  }
+  },
+  "default-ulimits": {
+    "nofile": {
+      "Name": "nofile",
+      "Hard": {{ docker_ulimit_nofile }},
+      "Soft": {{ docker_ulimit_nofile }}
+    }
+  },
+  "icc": false,
+  "no-new-privileges": true,
+  "live-restore": true,
+  "userland-proxy": false,
+  "ip6tables": true,
+  "iptables": true
 }
