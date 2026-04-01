@@ -229,15 +229,15 @@ dependencies: []
 
 **`tasks/main.yml`** — Lista de includes:
 ```yaml
-- include_tasks: packages.yml
-- include_tasks: unattended_upgrades.yml
-- include_tasks: ufw.yml
-- include_tasks: ssh.yml
-- include_tasks: users.yml
-- include_tasks: fail2ban.yml
-- include_tasks: limits.yml
-- include_tasks: time.yml
-- include_tasks: audit.yml
+- import_tasks: packages.yml
+- import_tasks: unattended_upgrades.yml
+- import_tasks: ufw.yml
+- import_tasks: ssh.yml
+- import_tasks: users.yml
+- import_tasks: fail2ban.yml
+- import_tasks: limits.yml
+- import_tasks: time.yml
+- import_tasks: audit.yml
 ```
 
 **`tasks/packages.yml`** — Tareas:
@@ -329,12 +329,12 @@ dependencies:
 
 **`tasks/main.yml`** — Includes:
 ```yaml
-- include_tasks: remove_old.yml
-- include_tasks: repo.yml
-- include_tasks: install.yml
-- include_tasks: daemon.yml
-- include_tasks: users.yml
-- include_tasks: dirs.yml
+- import_tasks: remove_old.yml
+- import_tasks: repo.yml
+- import_tasks: install.yml
+- import_tasks: daemon.yml
+- import_tasks: users.yml
+- import_tasks: dirs.yml
 ```
 
 **`tasks/remove_old.yml`** — Tareas:
@@ -401,13 +401,13 @@ dependencies:
 
 **`tasks/main.yml`** — Includes:
 ```yaml
-- include_tasks: prereqs.yml
-- include_tasks: dirs.yml
-- include_tasks: network.yml
-- include_tasks: config.yml
-- include_tasks: acme.yml
-- include_tasks: deploy.yml
-- include_tasks: firewall.yml
+- import_tasks: prereqs.yml
+- import_tasks: dirs.yml
+- import_tasks: network.yml
+- import_tasks: config.yml
+- import_tasks: acme.yml
+- import_tasks: deploy.yml
+- import_tasks: firewall.yml
 ```
 
 **`tasks/prereqs.yml`** — Tareas:
@@ -472,9 +472,9 @@ dependencies:
 
 **`tasks/main.yml`** — Includes:
 ```yaml
-- include_tasks: pull.yml
-- include_tasks: deploy.yml
-- include_tasks: prune.yml
+- import_tasks: pull.yml
+- import_tasks: deploy.yml
+- import_tasks: prune.yml
 ```
 
 **`tasks/pull.yml`** — Tareas:
@@ -772,6 +772,8 @@ collections:
     version: ">=9.0.0"
   - name: community.docker
     version: ">=3.0.0"
+  - name: ansible.posix
+    version: ">=1.5.0"
 
 roles: []
 ```
@@ -985,11 +987,9 @@ pip install ansible-lint
 # Ejecutar lint local:
 ansible-lint ansible/playbooks/site.yml
 ansible-lint ansible/roles/security/
-
-# Workflow GitHub Actions a crear: .github/workflows/ansible-lint.yml
 ```
 
-**`.github/workflows/ansible-lint.yml`** (a crear):
+**`.github/workflows/ansible-lint.yml`** (ya creado):
 ```yaml
 name: Ansible lint
 
@@ -1017,9 +1017,9 @@ server-debian13-install-traefik-portainer/
 ├── .github/
 │   └── workflows/
 │       ├── shell-lint.yml        # Ya existe — CI para scripts Bash
-│       └── ansible-lint.yml      # A crear — CI para Ansible
+│       └── ansible-lint.yml      # Ya existe — CI para Ansible
 ├── .shellcheckrc                 # Ya existe
-├── .ansible-lint                 # A crear — configuración ansible-lint
+├── .ansible-lint                 # Ya existe — configuración ansible-lint
 ├── ansible/                      # Proyecto Ansible (NUEVO)
 │   ├── ansible.cfg
 │   ├── requirements.yml

@@ -33,7 +33,7 @@ server-debian13-install-traefik-portainer/
 ├── .github/
 │   └── workflows/
 │       ├── shell-lint.yml        # CI: ShellCheck + shfmt en cada push/PR
-│       └── ansible-lint.yml      # CI: ansible-lint (pendiente de crear)
+│       └── ansible-lint.yml      # CI: ansible-lint en cada push/PR
 │
 ├── .shellcheckrc                 # Excepciones globales de ShellCheck
 │                                 #   SC1090/1091: source dinámico
@@ -75,7 +75,7 @@ server-debian13-install-traefik-portainer/
 ├── ANSIBLE-MIGRATION.md          # Arquitectura Ansible completa y plan de migración
 ├── AGENTS.md                     # Este archivo
 ├── CONTRIBUTING.md               # Guía de contribución y linting local
-└── README.md                     # (pendiente de crear)
+└── README.md                     # Descripción del proyecto, instalación y badges CI
 ```
 
 ---
@@ -216,7 +216,7 @@ Cada role sigue la estructura estándar de Ansible:
 ```
 roles/nombre_role/
 ├── tasks/
-│   ├── main.yml        # Incluye los subtasks con include_tasks
+│   ├── main.yml        # Incluye los subtasks con import_tasks (estático)
 │   └── *.yml           # Subtasks específicos (packages, ssh, ufw...)
 ├── handlers/
 │   └── main.yml        # Handlers para reinicio de servicios
@@ -293,7 +293,7 @@ mkdir -p ansible/roles/nuevo_role/{tasks,handlers,defaults,templates,meta}
 cat > ansible/roles/nuevo_role/tasks/main.yml << 'EOF'
 ---
 - name: Include specific tasks
-  ansible.builtin.include_tasks: subtask.yml
+  ansible.builtin.import_tasks: subtask.yml
 EOF
 
 cat > ansible/roles/nuevo_role/defaults/main.yml << 'EOF'
@@ -401,7 +401,7 @@ Tabla completa de todas las variables configurables del proyecto:
 | `TRAEFIK_PASSWORD` / `traefik_password` | Sí (Traefik) | — | Contraseña basicAuth Traefik (texto plano, se hashea con htpasswd) | `install_traefik.sh` (read) | `vault.yml` |
 | `INSTALL_DIR` / `install_dir` | No | `/opt/traefik-portainer` | Directorio de instalación del stack | `install_traefik.sh` (hardcoded) | `vars.yml` |
 | `LOG_FILE` | No | `/var/log/server-setup.log` | Archivo de log de los scripts | `common.sh` | N/A (Ansible usa su propio log) |
-| `TRAEFIK_IMAGE` / `traefik_image` | No | `traefik:v3.0` (scripts) / `traefik:v3.3` (Ansible) | Imagen Docker de Traefik | Hardcoded en `install_traefik.sh` | `vars.yml` |
+| `TRAEFIK_IMAGE` / `traefik_image` | No | `traefik:v3.3` (scripts) / `traefik:v3.3` (Ansible) | Imagen Docker de Traefik | Hardcoded en `install_traefik.sh` | `vars.yml` |
 | `PORTAINER_IMAGE` / `portainer_image` | No | `portainer/portainer-ce:latest` (scripts) / `portainer/portainer-ce:2.21.5` (Ansible) | Imagen Docker de Portainer | Hardcoded en `install_traefik.sh` | `vars.yml` |
 | `fail2ban_bantime` | No | `3600` (segundos) | Tiempo de ban en fail2ban | Hardcoded en `secure_server.sh` | `vars.yml` |
 | `fail2ban_maxretry` | No | `3` | Intentos máximos antes de ban (jail SSH) | Hardcoded en `secure_server.sh` | `vars.yml` |
@@ -428,28 +428,16 @@ Archivo: `.github/workflows/shell-lint.yml`
 - `SC2034` — variables definidas en un archivo y usadas en otro
 - `SC2154` — variables referenciadas sin asignación visible (definidas en otro módulo)
 
-### 7.2 Workflow pendiente: `ansible-lint.yml`
+### 7.2 Workflow: `ansible-lint.yml`
 
-A crear en `.github/workflows/ansible-lint.yml`:
+Archivo: `.github/workflows/ansible-lint.yml`
 
-```yaml
-name: Ansible lint
+**Triggers**: push y pull_request en cualquier rama.
 
-on: [push, pull_request]
+**Jobs**:
+1. **ansible-lint** — analiza los playbooks y roles Ansible usando la acción oficial `ansible/ansible-lint`
 
-jobs:
-  ansible-lint:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Install ansible-lint
-        run: pip install ansible-lint
-
-      - name: Run ansible-lint
-        run: ansible-lint ansible/playbooks/site.yml
-        working-directory: .
-```
+Configuración de reglas en `.ansible-lint` en la raíz del repositorio.
 
 ### 7.3 Pasar los checks localmente
 
@@ -765,15 +753,15 @@ Lista priorizada de mejoras futuras:
    SSH_PORT=2222 ADMIN_USER=deploy bash main.sh --non-interactive --step=all
    ```
 
-3. **[ ] Pin de versiones de imágenes Docker** — Cambiar `portainer/portainer-ce:latest` a una versión específica (ej: `2.21.5`) en `install_traefik.sh`. Añadir un archivo `versions.env` o similar para centralizar las versiones.
+3. **[x] Pin de versiones de imágenes Docker** — `portainer/portainer-ce:latest` fue reemplazado por `portainer/portainer-ce:2.21.5` en Ansible. Los scripts Bash usan `traefik:v3.3` y `portainer/portainer-ce:latest` (ver nota en sección 6).
 
 4. **[ ] Eliminar IPs estáticas de docker-compose.yml** — Las IPs `172.18.0.2` y `172.18.0.3` no son necesarias. Traefik usa autodiscovery por nombre de contenedor. Simplifica la configuración y evita conflictos.
 
 ### Media prioridad
 
-5. **[ ] README.md** — Crear un README completo con badges de CI, instrucciones de instalación, requisitos, y capturas de pantalla.
+5. **[x] README.md** — Creado con badges de CI, instrucciones de instalación, requisitos, y descripción del proyecto.
 
-6. **[ ] CI con Molecule para roles Ansible** — Añadir `.github/workflows/ansible-lint.yml` y tests de Molecule para cada role usando contenedores Docker con imagen Debian 13.
+6. **[x] CI con Molecule para roles Ansible** — Workflow `ansible-lint.yml` creado y activo. Tests de Molecule pendientes de implementar.
 
 7. **[ ] Script de rollback automatizado** — `modules/rollback.sh` que restaure backups de SSH, fail2ban y Docker de forma automática. Útil si algo sale mal durante la instalación.
 
