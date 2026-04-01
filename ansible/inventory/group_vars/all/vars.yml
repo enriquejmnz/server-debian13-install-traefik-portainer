@@ -1,12 +1,13 @@
 ---
-# Variables no sensibles de ejemplo para la fase inicial de Ansible.
+# Variables no sensibles para el inventory.
+# Las variables sensibles (passwords, keys) van en vault.yml.
 
 # === Sistema ===
 timezone: UTC
 system_nofile_limit: 65535
 system_nproc_limit: 65535
 
-# === SSH ===
+# === SSH (security role) ===
 ssh_port: 22
 ssh_password_auth: "no"
 ssh_login_grace_time: 120
@@ -17,13 +18,14 @@ ssh_client_alive_count_max: 2
 
 # === Usuario administrador ===
 admin_user: admin
-admin_ssh_public_key: "{{ vault_admin_ssh_public_key }}"
+admin_ssh_public_key: "{{ vault_admin_ssh_public_key | default('') }}"
 
-# === Fail2ban ===
+# === Fail2ban (security role) ===
 fail2ban_bantime: 3600
 fail2ban_findtime: 600
 fail2ban_maxretry: 3
 fail2ban_default_maxretry: 5
+fail2ban_destemail: root@localhost
 
 # === Docker ===
 docker_user: ""
