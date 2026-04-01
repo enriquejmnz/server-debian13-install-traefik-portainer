@@ -1,0 +1,22 @@
+---
+# tasks/ufw.yml - Configurar UFW firewall
+- name: Reset UFW to default state
+  ansible.builtin.shell: ufw --force reset
+
+- name: Set UFW default deny incoming policy
+  ansible.builtin.shell: ufw default deny incoming
+
+- name: Set UFW default allow outgoing policy
+  ansible.builtin.shell: ufw default allow outgoing
+
+- name: Allow SSH through UFW
+  ansible.builtin.shell: ufw allow "{{ ssh_port }}/tcp"
+
+- name: Allow HTTP through UFW
+  ansible.builtin.shell: ufw allow 80/tcp
+
+- name: Allow HTTPS through UFW
+  ansible.builtin.shell: ufw allow 443/tcp
+
+- name: Enable UFW
+  ansible.builtin.shell: ufw --force enable

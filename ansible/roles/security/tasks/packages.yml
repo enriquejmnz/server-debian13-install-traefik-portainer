@@ -1,0 +1,28 @@
+---
+# tasks/packages.yml - Instalar paquetes de seguridad
+- name: Install essential security packages
+  ansible.builtin.apt:
+    name: "{{ security_packages }}"
+    state: present
+  register: apt_security_packages
+
+- name: Install optional security packages (ignore failures)
+  ansible.builtin.apt:
+    name: "{{ security_optional_packages }}"
+    state: present
+  changed_when: false
+  failed_when: false
+
+- name: Configure unattended-upgrades
+  ansible.builtin.template:
+    src: 50unattended-upgrades-custom.j2
+    dest: /etc/apt/apt.conf.d/50unattended-upgrades-custom
+    mode: "0644"
+  when: apt_security_packages is changed
+  notify: Restart unattended-upgrades
+
+- name: Reconfigure unattended-upgrades
+  ansible.builtin.dpkg_selections:
+    name: unattended-upgrades
+    selection: install
+  changed_when: false

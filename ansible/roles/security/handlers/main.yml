@@ -1,12 +1,19 @@
 ---
 - name: Restart SSH
-  ansible.builtin.debug:
-    msg: "Placeholder: reinicio de SSH pendiente de implementación."
+  ansible.builtin.service:
+    name: ssh
+    state: restarted
 
 - name: Restart fail2ban
-  ansible.builtin.debug:
-    msg: "Placeholder: reinicio de fail2ban pendiente de implementación."
+  ansible.builtin.service:
+    name: fail2ban
+    state: restarted
 
-- name: Reload UFW
-  ansible.builtin.debug:
-    msg: "Placeholder: recarga de UFW pendiente de implementación."
+- name: Reload systemd
+  ansible.builtin.systemd:
+    daemon_reload: true
+
+- name: Restart unattended-upgrades
+  ansible.builtin.service:
+    name: unattended-upgrades
+    state: restarted

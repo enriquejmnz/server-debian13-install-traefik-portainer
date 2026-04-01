@@ -1,0 +1,20 @@
+---
+# tasks/ssh.yml - Configurar SSH hardening
+- name: Create sshusers group
+  ansible.builtin.group:
+    name: sshusers
+    state: present
+
+- name: Deploy sshd_config from template
+  ansible.builtin.template:
+    src: sshd_config.j2
+    dest: /etc/ssh/sshd_config
+    mode: "0644"
+    validate: "sshd -t -f %s"
+  notify: Restart SSH
+
+- name: Ensure sshd is running
+  ansible.builtin.service:
+    name: ssh
+    state: started
+    enabled: true

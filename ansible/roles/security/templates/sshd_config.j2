@@ -1,2 +1,38 @@
-# Placeholder inicial para phase-1.
-# Aquí irá la plantilla completa de /etc/ssh/sshd_config.
+Port {{ ssh_port }}
+AddressFamily any
+ListenAddress 0.0.0.0
+ListenAddress ::
+HostKey /etc/ssh/ssh_host_rsa_key
+HostKey /etc/ssh/ssh_host_ecdsa_key
+HostKey /etc/ssh/ssh_host_ed25519_key
+LoginGraceTime {{ ssh_login_grace_time | default(120) }}
+PermitRootLogin no
+StrictModes yes
+MaxAuthTries {{ ssh_max_auth_tries | default(3) }}
+MaxSessions {{ ssh_max_sessions | default(10) }}
+PubkeyAuthentication yes
+AuthorizedKeysFile .ssh/authorized_keys
+PasswordAuthentication {{ ssh_password_auth }}
+PermitEmptyPasswords no
+ChallengeResponseAuthentication no
+KbdInteractiveAuthentication no
+KerberosAuthentication no
+GSSAPIAuthentication no
+AllowAgentForwarding no
+AllowTcpForwarding no
+GatewayPorts no
+X11Forwarding no
+PrintMotd no
+PrintLastLog yes
+TCPKeepAlive yes
+PermitUserEnvironment no
+Compression delayed
+ClientAliveInterval {{ ssh_client_alive_interval | default(300) }}
+ClientAliveCountMax {{ ssh_client_alive_count_max | default(2) }}
+UseDNS no
+PidFile /run/sshd.pid
+MaxStartups 10:30:100
+UsePAM yes
+AcceptEnv LANG LC_*
+Subsystem sftp /usr/lib/openssh/sftp-server
+AllowGroups sshusers

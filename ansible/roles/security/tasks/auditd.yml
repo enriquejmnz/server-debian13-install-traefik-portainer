@@ -1,0 +1,7 @@
+---
+# tasks/auditd.yml - Configurar auditd
+- name: Enable and start auditd
+  ansible.builtin.service:
+    name: auditd
+    state: started
+    enabled: true

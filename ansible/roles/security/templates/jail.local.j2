@@ -1,2 +1,25 @@
-# Placeholder inicial para phase-1.
-# Aquí irá la plantilla de fail2ban.
+[DEFAULT]
+bantime  = {{ fail2ban_bantime }}
+findtime = {{ fail2ban_findtime }}
+maxretry = {{ fail2ban_default_maxretry | default(5) }}
+destemail = {{ fail2ban_destemail | default('root@localhost') }}
+sendername = Fail2Ban
+mta = sendmail
+backend = systemd
+action = %(action_mwl)s
+
+[sshd]
+enabled   = true
+port      = {{ ssh_port }}
+filter    = sshd
+maxretry  = {{ fail2ban_maxretry }}
+bantime   = {{ fail2ban_bantime }}
+findtime  = {{ fail2ban_findtime }}
+
+[sshd-systemd]
+enabled   = true
+filter    = sshd
+backend   = systemd
+maxretry  = {{ fail2ban_maxretry }}
+bantime   = {{ fail2ban_bantime }}
+findtime  = {{ fail2ban_findtime }}

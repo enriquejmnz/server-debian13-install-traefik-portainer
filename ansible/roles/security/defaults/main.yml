@@ -1,13 +1,32 @@
 ---
+# === SSH ===
 ssh_port: 22
 ssh_password_auth: "no"
+ssh_login_grace_time: 120
+ssh_max_auth_tries: 3
+ssh_max_sessions: 10
+ssh_client_alive_interval: 300
+ssh_client_alive_count_max: 2
+
+# === Usuario administrador ===
 admin_user: admin
 admin_ssh_public_key: ""
+
+# === Fail2ban ===
 fail2ban_bantime: 3600
-fail2ban_maxretry: 3
 fail2ban_findtime: 600
+fail2ban_maxretry: 3
+fail2ban_default_maxretry: 5
+fail2ban_destemail: root@localhost
+
+# === Límites del sistema ===
 system_nofile_limit: 65535
 system_nproc_limit: 65535
+
+# === Timezone ===
+timezone: UTC
+
+# === Paquetes de seguridad ===
 security_packages:
   - ufw
   - fail2ban
@@ -24,5 +43,6 @@ security_packages:
   - debconf
   - systemd-timesyncd
   - auditd
+
 security_optional_packages:
   - apticron

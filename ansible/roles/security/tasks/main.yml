@@ -1,12 +1,24 @@
 ---
-- name: Placeholder de paquetes de seguridad
-  ansible.builtin.debug:
-    msg: "Pendiente: implementar tasks/packages.yml del role security."
+- name: Include security packages task
+  ansible.builtin.include_tasks: packages.yml
 
-- name: Placeholder de hardening SSH
-  ansible.builtin.debug:
-    msg: "Pendiente: implementar tasks/ssh.yml del role security."
+- name: Include UFW firewall task
+  ansible.builtin.include_tasks: ufw.yml
 
-- name: Placeholder de fail2ban y firewall
-  ansible.builtin.debug:
-    msg: "Pendiente: implementar tasks/fail2ban.yml y tasks/ufw.yml del role security."
+- name: Include SSH hardening task
+  ansible.builtin.include_tasks: ssh.yml
+
+- name: Include fail2ban configuration task
+  ansible.builtin.include_tasks: fail2ban.yml
+
+- name: Include system limits task
+  ansible.builtin.include_tasks: limits.yml
+
+- name: Include timezone and NTP task
+  ansible.builtin.include_tasks: timezone.yml
+
+- name: Include auditd configuration task
+  ansible.builtin.include_tasks: auditd.yml
+
+- name: Include admin user task
+  ansible.builtin.include_tasks: admin_user.yml

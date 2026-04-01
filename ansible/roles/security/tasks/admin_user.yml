@@ -1,0 +1,29 @@
+---
+# tasks/admin_user.yml - Crear y configurar usuario administrador
+- name: Create admin user
+  ansible.builtin.user:
+    name: "{{ admin_user }}"
+    groups: sudo,sshusers
+    append: true
+    shell: /bin/bash
+    state: present
+  when: admin_user | length > 0
+
+- name: Add SSH public key for admin user
+  ansible.builtin.authorized_key:
+    user: "{{ admin_user }}"
+    key: "{{ admin_ssh_public_key }}"
+    state: present
+  when:
+    - admin_user | length > 0
+    - admin_ssh_public_key | length > 0
+
+- name: Configure sudo for admin user (passwordless)
+  ansible.builtin.lineinfile:
+    path: /etc/sudoers.d/admin-user
+    line: "{{ admin_user }} ALL=(ALL) NOPASSWD: ALL"
+    create: true
+    mode: "0440"
+    state: present
+    validate: "visudo -cf %s"
+  when: admin_user | length > 0
