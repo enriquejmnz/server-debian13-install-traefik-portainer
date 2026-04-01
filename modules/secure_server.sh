@@ -9,7 +9,8 @@ secure_server_create_admin_user() {
   while true; do
     read -r -p "Ingrese el nombre del usuario administrador: " admin_user
     if [[ -z $admin_user ]]; then
-      error "El nombre de usuario no puede estar vacío"
+      warn "El nombre de usuario no puede estar vacío"
+      continue
     fi
 
     if id "$admin_user" >/dev/null 2>&1; then

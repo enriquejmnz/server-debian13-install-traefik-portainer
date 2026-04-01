@@ -1,2 +1,7 @@
-# Placeholder inicial para phase-1.
-# Aquí irá la plantilla de límites de systemd.
+# /etc/systemd/system.conf.d/limits.conf
+# Managed by Ansible — do not edit manually
+# Extiende los límites de PAM a todos los procesos gestionados por systemd
+
+[Manager]
+DefaultLimitNOFILE={{ system_nofile_limit }}
+DefaultLimitNPROC={{ system_nproc_limit }}

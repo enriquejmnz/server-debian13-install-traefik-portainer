@@ -23,6 +23,7 @@ ansible/.vault_pass.txt
 ansible/ansible.log
 ansible/inventory/hosts.local.yml
 ansible/inventory/group_vars/all/vault.local.yml
+ansible/inventory/group_vars/all/vault.yml
 
 # Python / herramientas
 __pycache__/

@@ -5,6 +5,7 @@
     echo "{{ traefik_password }}" | htpasswd -ni "{{ traefik_user }}"
   register: traefik_auth_output
   changed_when: false
+  no_log: true
   when: traefik_password | length > 0
 
 - name: Set traefik_auth fact
@@ -42,10 +43,14 @@
     mode: "0600"
     owner: root
     group: docker
+    modification_time: preserve
+    access_time: preserve
 
 - name: Ensure UFW allows HTTP and HTTPS
-  ansible.builtin.shell: |
-    ufw allow {{ item }}/tcp
+  community.general.ufw:
+    rule: allow
+    port: "{{ item }}"
+    proto: tcp
   loop:
     - "80"
     - "443"
@@ -56,5 +61,4 @@
     cd "{{ install_dir }}" && docker compose up -d
   args:
     executable: /bin/bash
-  changed_when: true
-  notify: Restart Traefik Portainer stack
+  changed_when: false

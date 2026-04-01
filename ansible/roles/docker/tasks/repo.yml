@@ -15,23 +15,30 @@
     state: directory
     mode: "0755"
 
-- name: Download Docker GPG key
+- name: Set Docker architecture fact
+  ansible.builtin.set_fact:
+    docker_arch: >-
+      {{ 'amd64' if ansible_architecture == 'x86_64'
+         else ('arm64' if ansible_architecture == 'aarch64'
+         else ansible_architecture) }}
+
+- name: Download Docker GPG key (armored)
   ansible.builtin.get_url:
     url: https://download.docker.com/linux/debian/gpg
-    dest: /etc/apt/keyrings/docker.gpg
+    dest: /tmp/docker.asc
     mode: "0644"
     force: true
 
-- name: Ensure Docker GPG key is properly formatted
+- name: Dearmor Docker GPG key
   ansible.builtin.shell: |
-    gpg --dearmor -o /etc/apt/keyrings/docker.gpg /etc/apt/keyrings/docker.gpg 2>/dev/null || true
+    gpg --dearmor -o /etc/apt/keyrings/docker.gpg /tmp/docker.asc
     chmod a+r /etc/apt/keyrings/docker.gpg
   args:
     creates: /etc/apt/keyrings/docker.gpg
 
 - name: Add Docker repository
   ansible.builtin.apt_repository:
-    repo: "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.gpg] https://download.docker.com/linux/debian {{ ansible_distribution_release }} stable"
+    repo: "deb [arch={{ docker_arch }} signed-by=/etc/apt/keyrings/docker.gpg] https://download.docker.com/linux/debian {{ ansible_distribution_release }} stable"
     state: present
     filename: docker
   when: ansible_distribution == "Debian"

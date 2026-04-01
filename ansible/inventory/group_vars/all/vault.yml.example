@@ -1,0 +1,17 @@
+---
+# vault.yml.example — Plantilla de secrets para Ansible
+#
+# Copiar este archivo como vault.yml y rellenar con valores reales:
+#   cp ansible/inventory/group_vars/all/vault.yml.example \
+#      ansible/inventory/group_vars/all/vault.yml
+#
+# Cifrar el archivo antes de hacer commit:
+#   ansible-vault encrypt ansible/inventory/group_vars/all/vault.yml
+#
+# NUNCA hacer commit de vault.yml sin cifrar.
+
+vault_letsencrypt_email: admin@example.com
+vault_traefik_user: admin
+vault_traefik_password: CAMBIAR_ESTE_VALOR
+vault_admin_ssh_public_key: ssh-ed25519 AAAA_PLACEHOLDER usuario@equipo
+vault_admin_password_hash: CAMBIAR_HASH_SHADOW

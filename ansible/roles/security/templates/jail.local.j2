@@ -6,7 +6,7 @@ destemail = {{ fail2ban_destemail | default('root@localhost') }}
 sendername = Fail2Ban
 mta = sendmail
 backend = systemd
-action = %(action_mwl)s
+#action = %(action_mwl)s
 
 [sshd]
 enabled   = true

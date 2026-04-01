@@ -1,2 +1,15 @@
-# Placeholder inicial para phase-1.
-# Aquí irá la plantilla de límites del sistema.
+# /etc/security/limits.conf
+# Managed by Ansible — do not edit manually
+# Optimizado para servidor de producción con Docker
+
+# Límites de descriptores de archivo y procesos para todos los usuarios
+*               soft    nofile          {{ system_nofile_limit }}
+*               hard    nofile          {{ system_nofile_limit }}
+*               soft    nproc           {{ system_nproc_limit }}
+*               hard    nproc           {{ system_nproc_limit }}
+
+# Límites explícitos para root
+root            soft    nofile          {{ system_nofile_limit }}
+root            hard    nofile          {{ system_nofile_limit }}
+root            soft    nproc           {{ system_nproc_limit }}
+root            hard    nproc           {{ system_nproc_limit }}

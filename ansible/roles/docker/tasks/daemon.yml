@@ -13,30 +13,6 @@
     mode: "0644"
   notify: Restart Docker
 
-- name: Create Docker user
-  ansible.builtin.user:
-    name: "{{ docker_user }}"
-    groups: docker
-    append: true
-    shell: /bin/bash
-    state: present
-  when: docker_user | length > 0
-
-- name: Add existing user to Docker group
-  ansible.builtin.group:
-    name: docker
-    state: present
-  failed_when: false
-
-- name: Add user to Docker group
-  ansible.builtin.user:
-    name: "{{ docker_user }}"
-    groups: docker
-    append: true
-  when:
-    - docker_user | length > 0
-    - docker_user_exists | bool
-
 - name: Check if Docker user exists
   ansible.builtin.command: id "{{ docker_user }}"
   register: docker_user_check
@@ -48,3 +24,23 @@
   ansible.builtin.set_fact:
     docker_user_exists: "{{ docker_user_check.rc == 0 }}"
   when: docker_user | length > 0
+
+- name: Create Docker user and add to docker group
+  ansible.builtin.user:
+    name: "{{ docker_user }}"
+    groups: docker
+    append: true
+    shell: /bin/bash
+    state: present
+  when:
+    - docker_user | length > 0
+    - not (docker_user_exists | default(false) | bool)
+
+- name: Add existing user to Docker group
+  ansible.builtin.user:
+    name: "{{ docker_user }}"
+    groups: docker
+    append: true
+  when:
+    - docker_user | length > 0
+    - docker_user_exists | default(false) | bool
