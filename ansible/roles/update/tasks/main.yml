@@ -23,34 +23,34 @@
 
 - name: Get current Traefik image ID
   ansible.builtin.shell: |
-    docker image inspect --format '{{.Id}}' "{{ traefik_image }}"
+    docker image inspect --format '{{ '{{' }}.Id{{ '}}' }}' "{{ traefik_image }}"
   register: current_traefik_id
   changed_when: false
   failed_when: false
 
 - name: Get current Portainer image ID
   ansible.builtin.shell: |
-    docker image inspect --format '{{.Id}}' "{{ portainer_image }}"
+    docker image inspect --format '{{ '{{' }}.Id{{ '}}' }}' "{{ portainer_image }}"
   register: current_portainer_id
   changed_when: false
   failed_when: false
 
 - name: Pull latest images
   ansible.builtin.shell: |
-    cd "{{ install_dir }}" && docker compose pull
-  changed_when: true
+    cd "{{ install_dir }}" && docker compose pull 2>&1
   register: pull_result
+  changed_when: "'Pulled' in pull_result.stdout"
 
 - name: Get latest Traefik image ID
   ansible.builtin.shell: |
-    docker image inspect --format '{{.Id}}' "{{ traefik_image }}"
+    docker image inspect --format '{{ '{{' }}.Id{{ '}}' }}' "{{ traefik_image }}"
   register: latest_traefik_id
   changed_when: false
   failed_when: false
 
 - name: Get latest Portainer image ID
   ansible.builtin.shell: |
-    docker image inspect --format '{{.Id}}' "{{ portainer_image }}"
+    docker image inspect --format '{{ '{{' }}.Id{{ '}}' }}' "{{ portainer_image }}"
   register: latest_portainer_id
   changed_when: false
   failed_when: false
@@ -81,9 +81,9 @@
 
     - name: Prune unused images
       ansible.builtin.shell: |
-        docker image prune -f
-      changed_when: true
+        docker image prune -f 2>&1
       register: prune_result
+      changed_when: "'Total reclaimed space: 0B' not in prune_result.stdout"
       failed_when: false
 
     - name: Display deployment results

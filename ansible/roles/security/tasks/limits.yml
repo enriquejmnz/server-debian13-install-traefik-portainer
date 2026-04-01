@@ -5,13 +5,17 @@
     src: limits.conf.j2
     dest: /etc/security/limits.conf
     mode: "0644"
+    backup: true
 
-- name: Create systemd conf.d for limits
-  ansible.builtin.copy:
+- name: Create systemd conf.d directory for limits
+  ansible.builtin.file:
+    path: /etc/systemd/system.conf.d
+    state: directory
+    mode: "0755"
+
+- name: Deploy systemd limits
+  ansible.builtin.template:
+    src: systemd_limits.conf.j2
     dest: /etc/systemd/system.conf.d/limits.conf
-    content: |
-      [Manager]
-      DefaultLimitNOFILE={{ system_nofile_limit }}
-      DefaultLimitNPROC={{ system_nproc_limit }}
     mode: "0644"
   notify: Reload systemd

@@ -10,7 +10,7 @@
   when: admin_user | length > 0
 
 - name: Add SSH public key for admin user
-  ansible.builtin.authorized_key:
+  ansible.posix.authorized_key:
     user: "{{ admin_user }}"
     key: "{{ admin_ssh_public_key }}"
     state: present
@@ -18,10 +18,10 @@
     - admin_user | length > 0
     - admin_ssh_public_key | length > 0
 
-- name: Configure sudo for admin user (passwordless)
+- name: Configure sudo for admin user
   ansible.builtin.lineinfile:
     path: /etc/sudoers.d/admin-user
-    line: "{{ admin_user }} ALL=(ALL) NOPASSWD: ALL"
+    line: "{{ admin_user }} ALL=(ALL) {{ 'NOPASSWD: ' if admin_sudo_nopasswd else '' }}ALL"
     create: true
     mode: "0440"
     state: present

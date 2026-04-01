@@ -7,4 +7,6 @@
     - role: security
     - role: docker
     - role: traefik_portainer
-    - role: update
+  # El role 'update' se ejecuta por separado con update.yml
+  # para evitar actualizaciones de contenedores en cada re-apply:
+  #   ansible-playbook ansible/playbooks/update.yml

@@ -2,29 +2,13 @@
 # tasks/install.yml - Instalar Docker Engine y Docker Compose
 - name: Remove old Docker packages
   ansible.builtin.apt:
-    name:
-      - docker
-      - docker-engine
-      - docker.io
-      - containerd
-      - runc
-      - docker-ce
-      - docker-ce-cli
-      - containerd.io
-      - docker-ce-rootless-extras
-      - docker-buildx-plugin
-      - docker-compose-plugin
+    name: "{{ docker_old_packages }}"
     state: absent
   failed_when: false
 
 - name: Install Docker Engine and Docker Compose
   ansible.builtin.apt:
-    name:
-      - docker-ce
-      - docker-ce-cli
-      - containerd.io
-      - docker-buildx-plugin
-      - docker-compose-plugin
+    name: "{{ docker_packages }}"
     state: present
     update_cache: true
   notify: Restart Docker

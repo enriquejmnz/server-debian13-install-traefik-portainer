@@ -89,8 +89,8 @@ ChallengeResponseAuthentication no
 KbdInteractiveAuthentication no
 KerberosAuthentication no
 GSSAPIAuthentication no
-AllowAgentForwarding yes
-AllowTcpForwarding yes
+AllowAgentForwarding no
+AllowTcpForwarding no
 GatewayPorts no
 X11Forwarding no
 PrintMotd no

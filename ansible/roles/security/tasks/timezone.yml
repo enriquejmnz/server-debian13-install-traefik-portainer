@@ -1,8 +1,8 @@
 ---
 # tasks/timezone.yml - Configurar timezone y NTP
 - name: Set timezone to {{ timezone }}
-  ansible.builtin.shell: timedatectl set-timezone "{{ timezone }}"
-  changed_when: true
+  community.general.timezone:
+    name: "{{ timezone }}"
 
 - name: Enable and start systemd-timesyncd
   ansible.builtin.service:

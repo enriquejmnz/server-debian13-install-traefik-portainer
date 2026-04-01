@@ -18,8 +18,8 @@ ChallengeResponseAuthentication no
 KbdInteractiveAuthentication no
 KerberosAuthentication no
 GSSAPIAuthentication no
-AllowAgentForwarding no
-AllowTcpForwarding no
+AllowAgentForwarding {{ ssh_allow_agent_forwarding }}
+AllowTcpForwarding {{ ssh_allow_tcp_forwarding }}
 GatewayPorts no
 X11Forwarding no
 PrintMotd no
