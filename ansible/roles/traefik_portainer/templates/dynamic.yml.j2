@@ -1,2 +1,27 @@
-# Placeholder inicial para phase-1.
-# Aquí irá la configuración dinámica de Traefik.
+http:
+  middlewares:
+    secureHeaders:
+      headers:
+        sslRedirect: true
+        forceSTSHeader: true
+        stsIncludeSubdomains: true
+        stsPreload: true
+        stsSeconds: 31536000
+        contentTypeNosniff: true
+        browserXssFilter: true
+        referrerPolicy: "strict-origin-when-cross-origin"
+        permissionsPolicy: "camera=(), microphone=(), payment=()"
+        customFrameOptionsValue: "SAMEORIGIN"
+    user-auth:
+      basicAuth:
+        users:
+          - "{{ traefik_auth }}"
+
+tls:
+  options:
+    default:
+      cipherSuites:
+        - TLS_ECDHE_ECDSA_WITH_AES_256_GCM_SHA384
+        - TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384
+        - TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256
+      minVersion: VersionTLS12

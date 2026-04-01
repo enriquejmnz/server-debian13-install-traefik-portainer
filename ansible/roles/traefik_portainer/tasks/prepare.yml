@@ -1,0 +1,34 @@
+---
+# tasks/prepare.yml - Preparar el entorno para Traefik y Portainer
+- name: Verify Docker is installed
+  ansible.builtin.command: docker --version
+  register: docker_check
+  failed_when: false
+  changed_when: false
+
+- name: Fail if Docker is not installed
+  ansible.builtin.fail:
+    msg: "Docker is not installed. Please run the docker role first."
+  when: docker_check.rc != 0
+
+- name: Create Traefik and Portainer directories
+  ansible.builtin.file:
+    path: "{{ item }}"
+    state: directory
+    mode: "0755"
+  loop:
+    - "{{ install_dir }}"
+    - "{{ install_dir }}/traefik-data"
+    - "{{ install_dir }}/traefik-data/configurations"
+    - "{{ install_dir }}/portainer-data"
+
+- name: Set restrictive permissions on install directory
+  ansible.builtin.file:
+    path: "{{ install_dir }}"
+    mode: "0750"
+
+- name: Install apache2-utils for htpasswd
+  ansible.builtin.apt:
+    name: apache2-utils
+    state: present
+  changed_when: false

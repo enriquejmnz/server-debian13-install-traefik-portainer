@@ -1,12 +1,7 @@
 ---
-- name: Placeholder de prerrequisitos de Traefik y Portainer
-  ansible.builtin.debug:
-    msg: "Pendiente: implementar prerequisitos y directorios del role traefik_portainer."
+# tasks/main.yml - Instalar y configurar Traefik y Portainer
+- name: Include preparation tasks
+  ansible.builtin.include_tasks: prepare.yml
 
-- name: Placeholder de configuración del stack
-  ansible.builtin.debug:
-    msg: "Pendiente: implementar plantillas y despliegue de Docker Compose."
-
-- name: Placeholder de firewall y red Docker
-  ansible.builtin.debug:
-    msg: "Pendiente: implementar apertura de puertos y red proxy."
+- name: Include installation tasks
+  ansible.builtin.include_tasks: install.yml

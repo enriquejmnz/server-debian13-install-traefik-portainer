@@ -1,0 +1,60 @@
+---
+# tasks/install.yml - Generar y desplegar archivos de configuración de Traefik y Portainer
+- name: Generate Traefik htpasswd hash
+  ansible.builtin.shell: |
+    echo "{{ traefik_password }}" | htpasswd -ni "{{ traefik_user }}"
+  register: traefik_auth_output
+  changed_when: false
+  when: traefik_password | length > 0
+
+- name: Set traefik_auth fact
+  ansible.builtin.set_fact:
+    traefik_auth: "{{ traefik_auth_output.stdout }}"
+  when: traefik_password | length > 0
+
+- name: Deploy docker-compose.yml
+  ansible.builtin.template:
+    src: docker-compose.yml.j2
+    dest: "{{ install_dir }}/docker-compose.yml"
+    mode: "0644"
+  notify: Restart Traefik Portainer stack
+
+- name: Deploy traefik.yml
+  ansible.builtin.template:
+    src: traefik.yml.j2
+    dest: "{{ install_dir }}/traefik-data/traefik.yml"
+    mode: "0644"
+  notify: Restart Traefik Portainer stack
+
+- name: Deploy dynamic.yml
+  ansible.builtin.template:
+    src: dynamic.yml.j2
+    dest: "{{ install_dir }}/traefik-data/configurations/dynamic.yml"
+    mode: "0640"
+    owner: root
+    group: docker
+  notify: Restart Traefik Portainer stack
+
+- name: Create acme.json
+  ansible.builtin.file:
+    path: "{{ install_dir }}/traefik-data/acme.json"
+    state: touch
+    mode: "0600"
+    owner: root
+    group: docker
+
+- name: Ensure UFW allows HTTP and HTTPS
+  ansible.builtin.shell: |
+    ufw allow {{ item }}/tcp
+  loop:
+    - "80"
+    - "443"
+  when: "'ufw' in ansible_facts.packages"
+
+- name: Start Traefik and Portainer containers
+  ansible.builtin.shell: |
+    cd "{{ install_dir }}" && docker compose up -d
+  args:
+    executable: /bin/bash
+  changed_when: true
+  notify: Restart Traefik Portainer stack

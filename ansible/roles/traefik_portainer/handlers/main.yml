@@ -1,4 +1,7 @@
 ---
-- name: Recreate containers
-  ansible.builtin.debug:
-    msg: "Placeholder: recreación de contenedores pendiente de implementación."
+- name: Restart Traefik Portainer stack
+  ansible.builtin.shell: |
+    cd "{{ install_dir }}" && docker compose down && docker compose up -d
+  args:
+    executable: /bin/bash
+  changed_when: true
