@@ -1,12 +1,91 @@
 ---
-- name: Placeholder de pull de imágenes
-  ansible.builtin.debug:
-    msg: "Pendiente: implementar pull de imágenes del role update."
+# tasks/main.yml - Verificar y actualizar Traefik y Portainer
+- name: Verify Docker is installed
+  ansible.builtin.command: docker --version
+  register: docker_check
+  failed_when: false
+  changed_when: false
 
-- name: Placeholder de redeploy de contenedores
-  ansible.builtin.debug:
-    msg: "Pendiente: implementar redeploy del role update."
+- name: Fail if Docker is not installed
+  ansible.builtin.fail:
+    msg: "Docker is not installed. Please run the docker role first."
+  when: docker_check.rc != 0
 
-- name: Placeholder de limpieza de imágenes
+- name: Verify Traefik stack is installed
+  ansible.builtin.stat:
+    path: "{{ install_dir }}/docker-compose.yml"
+  register: compose_file
+
+- name: Fail if stack is not installed
+  ansible.builtin.fail:
+    msg: "Traefik and Portainer stack is not installed in {{ install_dir }}."
+  when: not compose_file.stat.exists
+
+- name: Get current Traefik image ID
+  ansible.builtin.shell: |
+    docker image inspect --format '{{.Id}}' "{{ traefik_image }}"
+  register: current_traefik_id
+  changed_when: false
+  failed_when: false
+
+- name: Get current Portainer image ID
+  ansible.builtin.shell: |
+    docker image inspect --format '{{.Id}}' "{{ portainer_image }}"
+  register: current_portainer_id
+  changed_when: false
+  failed_when: false
+
+- name: Pull latest images
+  ansible.builtin.shell: |
+    cd "{{ install_dir }}" && docker compose pull
+  changed_when: true
+  register: pull_result
+
+- name: Get latest Traefik image ID
+  ansible.builtin.shell: |
+    docker image inspect --format '{{.Id}}' "{{ traefik_image }}"
+  register: latest_traefik_id
+  changed_when: false
+  failed_when: false
+
+- name: Get latest Portainer image ID
+  ansible.builtin.shell: |
+    docker image inspect --format '{{.Id}}' "{{ portainer_image }}"
+  register: latest_portainer_id
+  changed_when: false
+  failed_when: false
+
+- name: Check if Traefik update is available
+  ansible.builtin.set_fact:
+    traefik_update_available: "{{ current_traefik_id.stdout != latest_traefik_id.stdout }}"
+
+- name: Check if Portainer update is available
+  ansible.builtin.set_fact:
+    portainer_update_available: "{{ current_portainer_id.stdout != latest_portainer_id.stdout }}"
+
+- name: Display update status
   ansible.builtin.debug:
-    msg: "Pendiente: implementar prune del role update."
+    msg: |
+      Traefik update available: {{ traefik_update_available }}
+      Portainer update available: {{ portainer_update_available }}
+  when: traefik_update_available or portainer_update_available
+
+- name: Redeploy stack if updates available
+  when: traefik_update_available or portainer_update_available
+  block:
+    - name: Redeploy Traefik and Portainer
+      ansible.builtin.shell: |
+        cd "{{ install_dir }}" && docker compose up -d
+      changed_when: true
+      register: deploy_result
+
+    - name: Prune unused images
+      ansible.builtin.shell: |
+        docker image prune -f
+      changed_when: true
+      register: prune_result
+      failed_when: false
+
+    - name: Display deployment results
+      ansible.builtin.debug:
+        var: deploy_result

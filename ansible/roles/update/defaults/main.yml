@@ -1,2 +1,4 @@
 ---
 install_dir: /opt/traefik-portainer
+traefik_image: traefik:v3.0
+portainer_image: portainer/portainer-ce:2.21.5
