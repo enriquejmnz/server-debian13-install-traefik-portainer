@@ -4,5 +4,5 @@
   become: true
   roles:
     - role: common
-    - role: docker
+    # El role update verifica Docker internamente; no es necesario re-ejecutar docker aquí
     - role: update

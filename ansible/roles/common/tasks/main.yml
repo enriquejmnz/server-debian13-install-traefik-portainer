@@ -4,19 +4,23 @@
     that:
       - ansible_distribution == "Debian"
     fail_msg: "Este role solo soporta Debian."
+  tags: [common]
 
 - name: Verificar versión mínima de Debian
   ansible.builtin.assert:
     that:
       - (ansible_distribution_major_version | int) >= 12
     fail_msg: "Se requiere Debian 12 o superior."
+  tags: [common]
 
 - name: Actualizar caché de apt
   ansible.builtin.apt:
     update_cache: true
     cache_valid_time: 3600
+  tags: [common, apt]
 
 - name: Instalar paquetes base
   ansible.builtin.apt:
     name: "{{ common_base_packages }}"
     state: present
+  tags: [common, apt]

@@ -1,2 +1,3 @@
 ---
-[]
+# Este role no define handlers propios.
+# Los servicios son manejados directamente por las tareas.

@@ -1,2 +1,3 @@
 ---
-[]
+# Este role no define handlers propios.
+# Las operaciones de docker compose son invocadas directamente en las tareas.

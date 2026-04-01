@@ -4,16 +4,23 @@
 # Asegurar que el PATH incluya /usr/sbin y /sbin
 export PATH="$PATH:/usr/sbin:/sbin"
 
-# Colores para la salida
-RED='\033[0;31m'
-GREEN='\033[0;32m'
-YELLOW='\033[0;33m'
-NC='\033[0m' # No Color
+# Colores para la salida (solo si se ejecuta en un terminal interactivo)
+if [ -t 1 ]; then
+  RED='\033[0;31m'
+  GREEN='\033[0;32m'
+  YELLOW='\033[0;33m'
+  NC='\033[0m'
+else
+  RED=''
+  GREEN=''
+  YELLOW=''
+  NC=''
+fi
 
 # Configuración de logs
 LOG_FILE="/var/log/server-setup.log"
 INSTALL_DIR="${INSTALL_DIR:-/opt/traefik-portainer}"
-TRAEFIK_IMAGE="${TRAEFIK_IMAGE:-traefik:v3.0}"
+TRAEFIK_IMAGE="${TRAEFIK_IMAGE:-traefik:v3.3}"
 PORTAINER_IMAGE="${PORTAINER_IMAGE:-portainer/portainer-ce:2.21.5}"
 
 # Función para validar correo electrónico

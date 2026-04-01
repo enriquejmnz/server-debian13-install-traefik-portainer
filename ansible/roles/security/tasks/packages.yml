@@ -10,7 +10,6 @@
   ansible.builtin.apt:
     name: "{{ security_optional_packages }}"
     state: present
-  changed_when: false
   failed_when: false
 
 - name: Configure unattended-upgrades
@@ -22,7 +21,5 @@
   notify: Restart unattended-upgrades
 
 - name: Reconfigure unattended-upgrades
-  ansible.builtin.dpkg_selections:
-    name: unattended-upgrades
-    selection: install
+  ansible.builtin.command: dpkg-reconfigure -plow unattended-upgrades
   changed_when: false

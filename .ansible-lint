@@ -1,0 +1,27 @@
+---
+# .ansible-lint - Configuración de ansible-lint para el proyecto
+
+# Perfil de reglas: basic | moderate | safety | shared | production
+profile: moderate
+
+# Excluir rutas del análisis
+exclude_paths:
+  - ansible/inventory/group_vars/all/vault.yml
+  - .git/
+
+# Reglas a ignorar globalmente (con justificación)
+warn_list:
+  - yaml[line-length]  # Líneas largas inevitables en templates y URL
+
+# Reglas completamente desactivadas
+skip_list: []
+
+# Modo de uso: offline (no descarga roles de Galaxy en cada ejecución de lint)
+offline: false
+
+# Variables mock para evitar errores de variable no definida en tareas
+mock_roles: []
+
+# Directorio de roles adicionales
+roles_path:
+  - ansible/roles

@@ -1,9 +1,12 @@
 ---
 - name: Include Docker repository task
-  ansible.builtin.include_tasks: repo.yml
+  ansible.builtin.import_tasks: repo.yml
+  tags: [docker, docker-repo]
 
 - name: Include Docker installation task
-  ansible.builtin.include_tasks: install.yml
+  ansible.builtin.import_tasks: install.yml
+  tags: [docker, docker-install]
 
 - name: Include Docker daemon configuration task
-  ansible.builtin.include_tasks: daemon.yml
+  ansible.builtin.import_tasks: daemon.yml
+  tags: [docker, docker-daemon]
