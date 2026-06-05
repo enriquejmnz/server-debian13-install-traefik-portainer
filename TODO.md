@@ -1,13 +1,13 @@
 # TODO — server-debian13-install-traefik-portainer
 
-> Análisis técnico generado el 2026-03-28.
-> Cubre bugs, seguridad, calidad de código, usabilidad y mantenibilidad de todos los módulos del proyecto.
+> Análisis técnico generado el 2026-03-28 y actualizado para reflejar el estado real de soporte actual.
+> Cubre bugs, seguridad, calidad de código, usabilidad, mantenibilidad y gaps de soporte/documentación.
 
 ---
 
 ## 1. Resumen del estado actual
 
-El proyecto es un instalador modular en Bash para configurar un servidor Debian 13 (Trixie) con Docker, Traefik v3 y Portainer CE. La estructura de módulos es limpia y la separación de responsabilidades está bien planteada.
+El proyecto combina scripts Bash y una variante Ansible para configurar un servidor Debian con Docker, Traefik v3 y Portainer CE. **Hoy la ruta más validada es Ansible sobre Debian 13 (Trixie)**. Debian 12 ya quedó soportado en implementación para Bash y Ansible, pero todavía requiere más validación operativa reproducible. Ubuntu no está soportado actualmente. Ver **`PLATFORM-SUPPORT.md`** como fuente de verdad.
 
 **Funciona bien:**
 - Flujo modular: `main.sh` orquesta módulos independientes con `source`.
@@ -23,12 +23,26 @@ El proyecto es un instalador modular en Bash para configurar un servidor Debian 
 - Problemas de seguridad reales (contraseña en variable de entorno de proceso, `docker.sock` sin alternativa).
 - Sin modo no-interactivo ni soporte para automatización/CI.
 - Archivos obsoletos y sin propósito en el repositorio (`install_docker.txt`, `ai_studio_code`).
-- Sin `README.md` ni `.gitignore`.
+- Todavía existe drift documental entre soporte declarado, estado real y próximos pasos.
 - `INSTALL_DIR` duplicado entre módulos, sin fuente única de configuración.
 
 ---
 
 ## 2. Bugs y problemas críticos (Alta prioridad)
+
+### BUG-00 — Drift documental sobre soporte de plataforma y estado de Ansible
+
+**Archivos:** `AGENTS.md`, `TODO.md`, `ANSIBLE-MIGRATION.md` y cualquier doc que resuma soporte
+
+**Qué hace mal:** Parte de la documentación histórica tiende a sonar como si la migración Ansible estuviera cerrada al 100%, como si Debian 12 ya estuviera al mismo nivel que Debian 13, o como si Ubuntu fuera un siguiente paso casi inmediato.
+
+**Impacto:** Puede llevar a decisiones operativas equivocadas, pruebas insuficientes o expectativas irreales sobre compatibilidad.
+
+**Solución aplicada / pendiente:**
+1. Mantener `PLATFORM-SUPPORT.md` como fuente de verdad explícita.
+2. Describir Debian 13 como la ruta más validada hoy.
+3. Describir Debian 12 como soporte implementado, pero todavía pendiente de más validación operativa.
+4. No prometer Ubuntu hasta que exista implementación + validación reproducible.
 
 ### BUG-01 — IPs estáticas hardcodeadas en la red Docker proxy
 
@@ -64,14 +78,16 @@ networks:
 
 **Archivo:** `modules/install_traefik.sh`, línea 99; `modules/update_traefik.sh`, línea 30
 
-**Qué hace mal:** `portainer/portainer-ce:latest` cambia de contenido sin preaviso. Una actualización futura puede introducir cambios de API incompatibles o comportamiento inesperado sin que el operador lo haya decidido.
+**Qué hacía mal:** `portainer/portainer-ce:latest` cambia de contenido sin preaviso. Una actualización futura puede introducir cambios de API incompatibles o comportamiento inesperado sin que el operador lo haya decidido.
 
 **Impacto:** Instalaciones en distintos momentos obtienen versiones diferentes; el script de actualización compara IDs de imagen pero no versiones semánticas.
 
-**Solución propuesta:** Pinear a una versión semántica estable (p. ej., `portainer/portainer-ce:2.21.5`) y actualizar la versión de forma deliberada. Exponer la versión como variable configurable al inicio del módulo.
+**Solución aplicada:** definir `PORTAINER_VERSION` en `ansible/inventory/group_vars/all/versions.env` y derivar `PORTAINER_IMAGE`/`portainer_image` desde ese único origen en Bash y Ansible.
+
+> **Estado actual real:** resuelto. Bash y Ansible consumen la misma versión canónica desde `ansible/inventory/group_vars/all/versions.env`.
 
 ```bash
-PORTAINER_VERSION="${PORTAINER_VERSION:-2.21.5}"
+PORTAINER_VERSION=2.39.3
 ```
 
 ---
@@ -422,9 +438,11 @@ if [ "$server_ip" != "$resolved_ip" ]; then
 fi
 ```
 
-### USA-04 — Sin README.md
+### USA-04 — Documentación de uso y soporte debe seguir sincronizada
 
-No existe documentación de uso. Un nuevo colaborador o usuario no sabe cómo ejecutar el script, qué prerrequisitos necesita, qué hace cada módulo, ni cuáles son las limitaciones conocidas.
+El repo ya tiene `README.md`, pero cualquier cambio de soporte, defaults o estrategia Bash/Ansible debe reflejarse también en `AGENTS.md`, `TODO.md`, `ANSIBLE-MIGRATION.md` y `PLATFORM-SUPPORT.md`.
+
+**Solución propuesta:** agregar una checklist documental en cada cambio que toque soporte, imágenes o roadmap.
 
 ### USA-05 — Sin modo `--dry-run`
 
@@ -500,9 +518,9 @@ No hay ningún test funcional que verifique que los módulos se ejecutan sin err
 
 **Solución propuesta:** Añadir un workflow de GitHub Actions con Docker-in-Docker (DinD) o una imagen base de Debian 13 que ejecute los módulos en modo `--dry-run` (una vez implementado), o al menos que cargue todos los módulos sin ejecutarlos para detectar errores de parsing.
 
-### CI-03 — Falta: ansible-lint (para futuro módulo Ansible)
+### CI-03 — ansible-lint para Ansible ✅
 
-Si el proyecto evoluciona para incluir playbooks de Ansible, añadir `ansible-lint` al workflow de CI.
+Workflow `ansible-lint.yml` creado y activo. CI-03 completado.
 
 ### CI-04 — Considerar añadir `hadolint` si se generan Dockerfiles
 
@@ -517,29 +535,29 @@ Actualmente no hay Dockerfiles, pero si se añaden en el futuro, `hadolint` debe
 
 | # | Tarea | Archivo(s) | Prio | Esfuerzo | Depende de |
 |---|---|---|---|---|---|
-| 1 | Eliminar `install_docker.txt` del repositorio | `modules/install_docker.txt` | 🔴 | S | — |
-| 2 | Eliminar o integrar `ai_studio_code` en `README.md` | `ai_studio_code` | 🔴 | S | #20 |
-| 3 | Corregir `cd "$INSTALL_DIR"` con `pushd`/`popd` en `install_traefik.sh` y `update_traefik.sh` | `modules/install_traefik.sh:185`, `modules/update_traefik.sh:16` | 🔴 | S | — |
-| 4 | Pinear imagen de Portainer a versión semántica y exponerla como variable | `modules/install_traefik.sh:99`, `modules/update_traefik.sh:30` | 🔴 | S | — |
-| 5 | Eliminar IPs estáticas hardcodeadas de la red Docker proxy | `modules/install_traefik.sh:80,105,122` | 🔴 | S | — |
-| 6 | Eliminar `version: "3.8"` del heredoc de `docker-compose.yml` | `modules/install_traefik.sh:71` | 🔴 | S | — |
-| 7 | Mover `create_admin_user` fuera de `secure_server()` al nivel de módulo | `modules/secure_server.sh:217-257` | 🔴 | S | — |
-| 8 | Mover `create_docker_user` fuera de `install_docker()` al nivel de módulo | `modules/install_docker.sh:49-71` | 🔴 | S | — |
+| 1 | Eliminar `install_docker.txt` del repositorio | `modules/install_docker.txt` | 🔴 | S | — | ✅ Completado |
+| 2 | Eliminar o integrar `ai_studio_code` en `README.md` | `ai_studio_code` | 🔴 | S | #20 | ✅ Completado |
+| 3 | Corregir `cd "$INSTALL_DIR"` con `pushd`/`popd` o subshells | `modules/install_traefik.sh`, `modules/update_traefik.sh` | 🔴 | S | — | ✅ Ya implementado (usa subshells) |
+| 4 | Pinear imagen de Portainer a versión semántica y exponerla como variable | `modules/install_traefik.sh`, `modules/update_traefik.sh` | 🔴 | S | — | ✅ Ya implementado (usa `versions.env`) |
+| 5 | Eliminar IPs estáticas hardcodeadas de la red Docker proxy | `modules/install_traefik.sh` | 🔴 | S | — | ✅ Ya implementado (sin IPs fijas) |
+| 6 | Eliminar `version: "3.8"` del heredoc de `docker-compose.yml` | `modules/install_traefik.sh` | 🔴 | S | — | ✅ Ya implementado |
+| 7 | Mover `create_admin_user` fuera de `secure_server()` al nivel de módulo | `modules/secure_server.sh` | 🔴 | S | — | ✅ Ya implementado (`secure_server_create_admin_user`) |
+| 8 | Mover `create_docker_user` fuera de `install_docker()` al nivel de módulo | `modules/install_docker.sh` | 🔴 | S | — | ✅ Ya implementado (`configure_docker_user`) |
 | 9 | Corregir `detect_debian_version`: añadir comillas, validar campos, usar expansión de parámetro | `modules/common.sh:47-48` | 🔴 | S | — |
 | 10 | Validar que `/var/log` existe antes de `touch "$LOG_FILE"`, con fallback a `/tmp` | `main.sh:30-31` | 🔴 | S | — |
 | 11 | Añadir `set -o pipefail` a `main.sh` | `main.sh:9` | 🔴 | S | — |
 | 12 | Escribir nueva `sshd_config` en archivo temporal, validar con `sshd -t -f` antes de reemplazar | `modules/secure_server.sh:87-126` | 🔴 | M | — |
 | 13 | Establecer `AllowAgentForwarding no` y `AllowTcpForwarding no` en `sshd_config` generado | `modules/secure_server.sh:108-109` | 🔴 | S | — |
-| 14 | Añadir `unset traefik_password` tras generar `traefik_auth` | `modules/install_traefik.sh:65` | 🔴 | S | — |
-| 15 | Añadir permisos restrictivos a `$INSTALL_DIR` y archivos de configuración generados | `modules/install_traefik.sh` | 🔴 | S | — |
-| 16 | Añadir `-r` a todos los `read -p` sin flag `-r` | Todos los módulos | 🟡 | S | — |
-| 17 | Centralizar `INSTALL_DIR` como constante en `common.sh` | `modules/common.sh`, `modules/install_traefik.sh:17`, `modules/update_traefik.sh:7` | 🟡 | S | — |
+| 14 | Añadir `unset traefik_password` tras generar `traefik_auth` | `modules/install_traefik.sh` | 🔴 | S | — | ✅ Ya implementado |
+| 15 | Añadir permisos restrictivos a `$INSTALL_DIR` y archivos de configuración generados | `modules/install_traefik.sh` | 🔴 | S | — | |
+| 16 | Añadir `-r` a todos los `read -p` sin flag `-r` | Todos los módulos | 🟡 | S | — | |
+| 17 | Centralizar `INSTALL_DIR` como constante en `common.sh` | `modules/common.sh` | 🟡 | S | — | ✅ Ya implementado |
 | 18 | Reemplazar patrón `check_error $?` por `comando || error "msg"` en todos los módulos | Todos los módulos | 🟡 | M | — |
 | 19 | Añadir `SCRIPT_VERSION` en `common.sh` y mostrarla en el menú y los logs | `modules/common.sh`, `main.sh` | 🟡 | S | — |
-| 20 | Crear `README.md` con instrucciones de uso, prerrequisitos y estructura del proyecto | `README.md` (nuevo) | 🟡 | M | — |
+| 20 | Mantener sincronizados `README.md`, `AGENTS.md`, `TODO.md`, `ANSIBLE-MIGRATION.md` y `PLATFORM-SUPPORT.md` cuando cambie soporte o defaults | `*.md` | 🟡 | S | — |
 | 21 | Crear `.gitignore` (`.env`, `acme.json`, `*.bak`, backups locales) | `.gitignore` (nuevo) | 🟡 | S | — |
 | 22 | Solicitar `destemail` de fail2ban de forma interactiva o desde variable de entorno | `modules/secure_server.sh:143` | 🟡 | S | — |
-| 23 | Eliminar `"experimental": false` de `daemon.json` (redundante) | `modules/install_docker.sh:86` | 🟡 | S | — |
+| 23 | ~~Eliminar `"experimental": false` de `daemon.json` (redundante)~~ ✅ Hecho en Bash + Ansible + Molecule | `modules/install_docker.sh`, `ansible/roles/docker/templates/daemon.json.j2`, `ansible/roles/docker/molecule/default/tests/test_default.py` | — | — | — |
 | 24 | Añadir validación de resolución DNS de subdominios antes de configurar Let's Encrypt | `modules/install_traefik.sh:45-50` | 🟡 | M | — |
 | 25 | Añadir soporte de flags CLI básicos (`--help`, número de opción) a `main.sh` | `main.sh` | 🟡 | M | — |
 | 26 | Añadir soporte de archivo `.env` opcional para preconfiguración no interactiva | `main.sh`, todos los módulos | 🟡 | L | #25 |
@@ -550,4 +568,49 @@ Actualmente no hay Dockerfiles, pero si se añaden en el futuro, `hadolint` debe
 
 ---
 
-*Última actualización: 2026-03-28*
+---
+
+## 9. Tareas pendientes de la migración Ansible
+
+> Items abiertos del frente Ansible. La implementación existe, pero la validación y el soporte declarado todavía NO están cerrados al mismo nivel para todas las plataformas. Ver `PLATFORM-SUPPORT.md`.
+
+| # | Tarea | Prioridad | Notas |
+|---|---|---|---|
+| 1 | Ejecutar validación operativa en VM Debian 13 real | 🟡 | Los tests con Docker son limitados (systemd, UFW, auditd) |
+| 2 | Añadir template de reglas personalizadas de auditd | 🟢 | `roles/security/templates/audit_rules.j2` |
+| 3 | Añadir tests de idempotencia en Molecule (converge dos veces) | 🟢 | Verificar que la segunda ejecución no produce cambios |
+| 4 | Ejecutar smoke tests/VM real para el origen canónico de versión de Portainer | 🟢 | El código ya consume `versions.env`; falta validación operativa en host real |
+| 5 | Reforzar validación operativa de Debian 12 en Ansible | 🟡 | La compatibilidad quedó implementada; falta evidencia reproducible fuera de Docker |
+| 6 | Mantener Ubuntu explícitamente fuera de soporte hasta tener implementación específica + validación | 🟡 | No anunciar “soporte cercano” sin evidencia |
+
+---
+
+*Última actualización: 2026-06-04 — Sesión de validación en Debian 12*
+
+---
+
+## 10. Estado al cierre de sesión (2026-06-05)
+
+### Lo que se completó hoy
+
+- **Centralización de versiones**: creado `modules/versions.env` para Bash (independiente de Ansible). Agregado `TRAEFIK_VERSION=v3.7.4` a ambos archivos.
+- **Independencia Bash ↔ Ansible**: `modules/common.sh` ya no sourcea `ansible/.../versions.env`. Ahora cada sistema tiene su propia fuente de versiones.
+- **Ansible traefik_image dinámico**: replicado el patrón de Portainer — `traefik_version` se lee desde `versions.env` vía lookup plugin. Eliminado `traefik_image` de `vars.yml`.
+- **Molecule test**: nueva función `load_traefik_version()` que lee dinámicamente de `versions.env`.
+- **secure_server.sh**: 
+  - `PermitRootLogin no` → `prohibit-password` (manteniendo la opción interactiva para PasswordAuthentication)
+  - timezone ahora es interactivo con loop de reintento y `timedatectl list-timezones`
+  - Resumen final muestra `$timezone` en vez de "UTC" hardcodeado
+- **update_traefik.sh**: corregidos mensajes de log — ya no dice "Consultando Docker Hub". Ahora dice "Verificando si hay nuevos digests para las versiones pinadas".
+- **Documentación**: todas las referencias a `traefik:v3.3` actualizadas en README, AGENTS, ANSIBLE-MIGRATION. Aclarado que el update no detecta nuevas versiones.
+
+### Validación en servidor real (Debian 12)
+
+- Opción 1 (secure_server) → **OK** (partes 1, 2 y 3 verificadas)
+
+### Pendiente para próxima sesión
+
+1. Ejecutar opción 3 (Traefik + Portainer) en Debian 12 y verificar TLS/routing con las nuevas versiones (v3.7.4 / 2.39.3)
+2. Ejecutar opción 4 (update) y verificar que funciona correctamente con las versiones pinadas
+3. Ejecutar opción 5 (todo junto) en VM limpia de Debian 13
+4. Validación Ansible: `ansible-lint` + `--syntax-check` en los roles modificados (traefik_portainer, update)
