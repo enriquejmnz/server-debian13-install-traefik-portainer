@@ -1,4 +1,8 @@
 ---
 install_dir: /opt/traefik-portainer
-traefik_image: traefik:v3.0
-portainer_image: portainer/portainer-ce:2.21.5
+traefik_version_file: "{{ role_path | dirname | dirname }}/inventory/group_vars/all/versions.env"
+traefik_version: "{{ lookup('ansible.builtin.ini', 'TRAEFIK_VERSION type=properties file=' ~ traefik_version_file) }}"
+traefik_image: "traefik:{{ traefik_version }}"
+portainer_version_file: "{{ role_path | dirname | dirname }}/inventory/group_vars/all/versions.env"
+portainer_version: "{{ lookup('ansible.builtin.ini', 'PORTAINER_VERSION type=properties file=' ~ portainer_version_file) }}"
+portainer_image: "portainer/portainer-ce:{{ portainer_version }}"

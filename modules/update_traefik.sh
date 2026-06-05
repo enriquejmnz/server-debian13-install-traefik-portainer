@@ -3,6 +3,7 @@
 
 # Función para verificar y actualizar Traefik y Portainer
 update_traefik_portainer() {
+  require_supported_debian
   log "Verificando actualizaciones para Traefik y Portainer..."
 
   if ! command -v docker &>/dev/null; then
@@ -17,9 +18,9 @@ update_traefik_portainer() {
   current_traefik_id=$(docker image inspect --format '{{.Id}}' "$TRAEFIK_IMAGE" 2>/dev/null || true)
   current_portainer_id=$(docker image inspect --format '{{.Id}}' "$PORTAINER_IMAGE" 2>/dev/null || true)
 
-  # Descargar las últimas versiones de las imágenes para comparar
-  log "Consultando Docker Hub para las versiones más recientes..."
-  (cd "$INSTALL_DIR" && docker compose pull >/dev/null 2>&1) || error "Error al contactar con Docker Hub para buscar actualizaciones."
+  # Descargar las últimas imágenes para verificar si el digest de la versión pinada cambió
+  log "Verificando si hay nuevos digests para las versiones pinadas..."
+  (cd "$INSTALL_DIR" && docker compose pull >/dev/null 2>&1) || error "Error al descargar las imágenes."
 
   # Obtener IDs de las imágenes recién descargadas
   latest_traefik_id=$(docker image inspect --format '{{.Id}}' "$TRAEFIK_IMAGE" 2>/dev/null || true)

@@ -17,11 +17,40 @@ else
   NC=''
 fi
 
+# Configuración compartida del proyecto — independiente de Ansible
+COMMON_DIR=$(cd -- "$(dirname "${BASH_SOURCE[0]}")" && pwd)
+PROJECT_ROOT=$(dirname "$COMMON_DIR")
+SHARED_VERSIONS_FILE="$COMMON_DIR/versions.env"
+
+load_portainer_version() {
+  if [[ ! -f $SHARED_VERSIONS_FILE ]]; then
+    printf '%s\n' "[ERROR] No se encontró el archivo de versiones ($SHARED_VERSIONS_FILE)." >&2
+    exit 1
+  fi
+
+  # shellcheck source=/dev/null
+  . "$SHARED_VERSIONS_FILE"
+
+  if [[ -z ${PORTAINER_VERSION:-} ]]; then
+    printf '%s\n' "[ERROR] PORTAINER_VERSION no está definido en $SHARED_VERSIONS_FILE" >&2
+    exit 1
+  fi
+
+  if [[ -z ${TRAEFIK_VERSION:-} ]]; then
+    printf '%s\n' "[ERROR] TRAEFIK_VERSION no está definido en $SHARED_VERSIONS_FILE" >&2
+    exit 1
+  fi
+}
+
+load_portainer_version
+
 # Configuración de logs
-LOG_FILE="/var/log/server-setup.log"
+LOG_FILE="${LOG_FILE:-/var/log/server-setup.log}"
 INSTALL_DIR="${INSTALL_DIR:-/opt/traefik-portainer}"
-TRAEFIK_IMAGE="${TRAEFIK_IMAGE:-traefik:v3.3}"
-PORTAINER_IMAGE="${PORTAINER_IMAGE:-portainer/portainer-ce:2.21.5}"
+TRAEFIK_IMAGE="${TRAEFIK_IMAGE:-traefik:${TRAEFIK_VERSION}}"
+PORTAINER_IMAGE="${PORTAINER_IMAGE:-portainer/portainer-ce:${PORTAINER_VERSION}}"
+SUPPORTED_DEBIAN_VERSIONS=("12" "13")
+SUPPORTED_DEBIAN_LABEL="Debian 12 (Bookworm) y Debian 13 (Trixie)"
 
 # Función para validar correo electrónico
 validate_email() {
@@ -50,27 +79,83 @@ validate_domain() {
   fi
 }
 
-# Función para detectar la versión de Debian
+is_supported_debian_version() {
+  local version=$1
+  local supported_version
+
+  for supported_version in "${SUPPORTED_DEBIAN_VERSIONS[@]}"; do
+    if [[ $version == "$supported_version" ]]; then
+      return 0
+    fi
+  done
+
+  return 1
+}
+
+unsupported_bash_platform() {
+  local current_platform=$1
+
+  error "Plataforma no soportada para la ruta Bash: ${current_platform}. Este instalador solo soporta ${SUPPORTED_DEBIAN_LABEL}. Ubuntu Server no está soportado actualmente."
+}
+
+# Función para detectar la versión de Debian soportada por la ruta Bash
 detect_debian_version() {
   if [[ ! -f /etc/os-release ]]; then
-    error "No se pudo detectar la versión de Debian"
+    error "No se pudo detectar el sistema operativo: falta /etc/os-release"
   fi
 
   # shellcheck source=/etc/os-release
   . /etc/os-release
 
-  if [[ -z ${VERSION_ID:-} || -z ${VERSION_CODENAME:-} ]]; then
-    error "No se pudo detectar la versión de Debian: VERSION_ID o VERSION_CODENAME no definidos"
+  DISTRO_ID="${ID:-}"
+  DISTRO_NAME="${PRETTY_NAME:-${NAME:-desconocido}}"
+
+  if [[ -z ${DISTRO_ID:-} || -z ${VERSION_ID:-} ]]; then
+    error "No se pudo detectar una plataforma compatible: ID o VERSION_ID no definidos en /etc/os-release"
+  fi
+
+  if [[ $DISTRO_ID != "debian" ]]; then
+    unsupported_bash_platform "$DISTRO_NAME"
   fi
 
   DEBIAN_VERSION="${VERSION_ID%%.*}"
-  DEBIAN_CODENAME="${VERSION_CODENAME}"
+  DEBIAN_CODENAME="${VERSION_CODENAME:-}"
 
   if [[ ! $DEBIAN_VERSION =~ ^[0-9]+$ ]]; then
     error "No se pudo detectar una versión de Debian válida: '$DEBIAN_VERSION'"
   fi
 
-  log "Detectada Debian $DEBIAN_VERSION ($DEBIAN_CODENAME)"
+  if [[ -z $DEBIAN_CODENAME ]]; then
+    case $DEBIAN_VERSION in
+    12)
+      DEBIAN_CODENAME="bookworm"
+      ;;
+    13)
+      DEBIAN_CODENAME="trixie"
+      ;;
+    esac
+  fi
+
+  if ! is_supported_debian_version "$DEBIAN_VERSION"; then
+    unsupported_bash_platform "$DISTRO_NAME"
+  fi
+
+  if [[ -z $DEBIAN_CODENAME ]]; then
+    error "No se pudo resolver el codename de Debian para la versión '$DEBIAN_VERSION'"
+  fi
+
+  log "Detectado Debian $DEBIAN_VERSION ($DEBIAN_CODENAME). La ruta Bash soporta ${SUPPORTED_DEBIAN_LABEL}."
+}
+
+require_supported_debian() {
+  if [[ -z ${DEBIAN_VERSION:-} || -z ${DEBIAN_CODENAME:-} || -z ${DISTRO_ID:-} ]]; then
+    detect_debian_version
+    return 0
+  fi
+
+  if [[ $DISTRO_ID != "debian" ]] || ! is_supported_debian_version "$DEBIAN_VERSION"; then
+    unsupported_bash_platform "${DISTRO_NAME:-$DISTRO_ID}"
+  fi
 }
 
 # Función para manejo de errores

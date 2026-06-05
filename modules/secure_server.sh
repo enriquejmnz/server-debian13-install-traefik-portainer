@@ -1,9 +1,7 @@
 #!/bin/bash
-# modules/secure_server.sh - Módulo para asegurar un servidor Debian 13
+# modules/secure_server.sh - Módulo para asegurar un servidor Debian soportado
 
 secure_server_create_admin_user() {
-  local password_auth=$1
-
   log "Creando o configurando usuario administrador..."
 
   while true; do
@@ -37,15 +35,45 @@ secure_server_create_admin_user() {
     break
   done
 
-  if [[ $password_auth == "no" ]]; then
-    log "Por favor, configure la autenticación por clave SSH para $admin_user, ya que la autenticación por contraseña está deshabilitada"
+  echo ""
+  echo -e "${YELLOW}==========================================${NC}"
+  echo -e "${YELLOW}  CONFIGURACIÓN DE ACCESO SSH${NC}"
+  echo -e "${YELLOW}==========================================${NC}"
+  echo ""
+  echo -e "  Método 1 — Pegar clave pública ahora:"
+  echo -e "    Si ya tenés tu clave pública, pegala a continuación."
+  echo -e "    (Generala con: ${GREEN}ssh-keygen -t ed25519${NC})"
+  echo ""
+
+  read -r -p "  Pegá tu clave pública SSH (dejar vacío para omitir): " admin_ssh_key
+
+  if [[ -n $admin_ssh_key ]]; then
+    local auth_keys_dir="/home/$admin_user/.ssh"
+    local auth_keys_file="$auth_keys_dir/authorized_keys"
+
+    mkdir -p "$auth_keys_dir" || error "Error al crear $auth_keys_dir"
+    printf '%s\n' "$admin_ssh_key" >>"$auth_keys_file" || error "Error al escribir la clave SSH"
+    chmod 700 "$auth_keys_dir" || error "Error al ajustar permisos de $auth_keys_dir"
+    chmod 600 "$auth_keys_file" || error "Error al ajustar permisos de $auth_keys_file"
+    chown -R "$admin_user:$admin_user" "$auth_keys_dir" || error "Error al asignar propiedad de $auth_keys_dir"
+    log "Clave SSH configurada para $admin_user"
   else
-    log "Configure la autenticación por clave SSH para $admin_user o use la contraseña proporcionada"
+    echo ""
+    echo -e "  Método 2 — Usar ssh-copy-id desde tu máquina local:"
+    echo -e "  ${GREEN}ssh-copy-id -p $ssh_port $admin_user@$(hostname -I | awk '{print $1}')${NC}"
+    echo -e "  O con una clave específica:"
+    echo -e "  ${GREEN}ssh-copy-id -i ~/.ssh/tu_clave.pub -p $ssh_port $admin_user@$(hostname -I | awk '{print $1}')${NC}"
+    echo ""
+    read -r -p "  Presioná Enter cuando hayas copiado la clave (o escribí 'skip' para omitir): " ssh_key_confirm
+
+    if [[ $ssh_key_confirm == "skip" ]]; then
+      warn "No se configuró clave SSH para $admin_user. Asegurate de hacerlo manualmente después."
+    fi
   fi
 }
 
 configure_fail2ban_systemd_backend() {
-  local conf_file line_to_add
+  local conf_file line_to_add line
 
   if ((DEBIAN_VERSION < 13)); then
     return 0
@@ -56,9 +84,41 @@ configure_fail2ban_systemd_backend() {
 
   touch "$conf_file" || error "Error al preparar la configuración de fail2ban en $conf_file"
 
-  if ! grep -qF -- "$line_to_add" "$conf_file"; then
-    printf '%s\n' "$line_to_add" >>"$conf_file" || error "Error al configurar backend systemd para fail2ban"
-  fi
+  while IFS= read -r line; do
+    if [[ $line == "$line_to_add" ]]; then
+      return 0
+    fi
+  done <"$conf_file"
+
+  printf '%s\n' "$line_to_add" >>"$conf_file" || error "Error al configurar backend systemd para fail2ban"
+}
+
+configure_fail2ban_jail() {
+  local ssh_port=$1
+
+  log "Configurando fail2ban para Debian $DEBIAN_VERSION ($DEBIAN_CODENAME)..."
+  cat >/etc/fail2ban/jail.local <<EOF
+[DEFAULT]
+bantime = 3600
+findtime = 600
+maxretry = 5
+destemail = root@localhost
+sendername = Fail2Ban
+mta = sendmail
+#action = %(action_mwl)s
+backend = systemd
+
+[sshd]
+enabled = true
+port = $ssh_port
+filter = sshd
+backend = systemd
+maxretry = 3
+bantime = 3600
+findtime = 600
+EOF
+
+  configure_fail2ban_systemd_backend
 }
 
 deploy_sshd_config() {
@@ -77,7 +137,7 @@ HostKey /etc/ssh/ssh_host_rsa_key
 HostKey /etc/ssh/ssh_host_ecdsa_key
 HostKey /etc/ssh/ssh_host_ed25519_key
 LoginGraceTime 120
-PermitRootLogin no
+PermitRootLogin prohibit-password
 StrictModes yes
 MaxAuthTries 3
 MaxSessions 10
@@ -129,33 +189,31 @@ EOF
 
 # Función para asegurar el servidor
 secure_server() {
+  require_supported_debian
   log "Iniciando configuración de seguridad del servidor..."
 
-  # Actualización del sistema
+  # =====================================================================
+  # FASE 1 — Preparación del sistema y paquetes
+  # =====================================================================
   log "Actualizando el sistema..."
   apt-get update || error "Error al actualizar los índices de paquetes"
   apt-get upgrade -y || error "Error al actualizar el sistema"
 
-  # Instalar herramientas esenciales
   log "Instalando herramientas esenciales..."
 
-  # Lista de paquetes esenciales
   essential_packages=(
     "ufw" "fail2ban" "unattended-upgrades" "apt-listchanges" "net-tools" "sudo"
     "htop" "curl" "wget" "gnupg" "lsb-release" "ca-certificates" "debconf"
-    "systemd-timesyncd" "auditd"
+    "systemd-timesyncd" "auditd" "openssh-server"
   )
-  # Paquetes opcionales que pueden no estar disponibles
   optional_packages=("apticron")
 
-  # Instalar paquetes esenciales
   for package in "${essential_packages[@]}"; do
     log "Instalando $package..."
     if ! apt-get install -y "$package"; then
       warn "No se pudo instalar $package, continuando..."
     fi
   done
-  # Instalar paquetes opcionales
   for package in "${optional_packages[@]}"; do
     log "Intentando instalar $package (opcional)..."
     if apt-get install -y "$package" 2>/dev/null; then
@@ -165,31 +223,17 @@ secure_server() {
     fi
   done
 
-  # Configurar actualizaciones automáticas
-  log "Configurando actualizaciones automáticas..."
-  cat >/etc/apt/apt.conf.d/50unattended-upgrades-custom <<EOF
-Unattended-Upgrade::Automatic-Reboot "false";
-Unattended-Upgrade::Automatic-Reboot-Time "02:00";
-EOF
-  dpkg-reconfigure -plow unattended-upgrades || error "Error al configurar actualizaciones automáticas"
+  command -v sshd >/dev/null 2>&1 || error "openssh-server no está disponible después de la instalación de paquetes"
 
-  # Configurar UFW
-  log "Configurando UFW..."
-  ufw --force reset
-  ufw default deny incoming || error "Error al configurar política de denegación de UFW"
-  ufw default allow outgoing || error "Error al configurar política de salida de UFW"
-
-  # Configurar SSH seguro
-  log "Configurando SSH seguro..."
+  # =====================================================================
+  # FASE 2 — Configuración SSH (puerto y política de contraseñas)
+  # =====================================================================
+  log "Paso 1/4 — Configuración de SSH..."
   read -r -p "Ingrese el puerto SSH (presione Enter para usar 22, o especifique un puerto no estándar): " ssh_port
   ssh_port=${ssh_port:-22}
   if ! [[ $ssh_port =~ ^[0-9]+$ ]] || [[ $ssh_port -lt 1 ]] || [[ $ssh_port -gt 65535 ]]; then
     error "Puerto SSH inválido: $ssh_port"
   fi
-  ufw allow "${ssh_port}/tcp" || error "Error al configurar puerto SSH en UFW"
-  ufw allow http || error "Error al permitir HTTP en UFW"
-  ufw allow https || error "Error al permitir HTTPS en UFW"
-  ufw --force enable || error "Error al habilitar UFW"
 
   read -r -p "¿Desea deshabilitar la autenticación por contraseña para SSH? (s/n, predeterminado: s): " disable_password
   disable_password=${disable_password:-s}
@@ -201,7 +245,10 @@ EOF
     log "Autenticación por contraseña para SSH permanecerá habilitada"
   fi
 
-  deploy_sshd_config "$ssh_port" "$password_auth"
+  # =====================================================================
+  # FASE 3 — Usuario administrador y acceso SSH (ANTES de tocar UFW/SSH)
+  # =====================================================================
+  log "Paso 2/4 — Creación del usuario administrador..."
 
   log "Creando grupo sshusers para acceso SSH..."
   if ! getent group sshusers >/dev/null 2>&1; then
@@ -210,34 +257,40 @@ EOF
     log "El grupo sshusers ya existe"
   fi
 
-  log "Configurando fail2ban para Debian 13..."
-  cat >/etc/fail2ban/jail.local <<EOF
-[DEFAULT]
-bantime = 3600
-findtime = 600
-maxretry = 5
-destemail = root@localhost
-sendername = Fail2Ban
-mta = sendmail
-#action = %(action_mwl)s
-backend = systemd
-[sshd]
-enabled = true
-port = $ssh_port
-filter = sshd
-maxretry = 3
-bantime = 3600
-findtime = 600
-[sshd-systemd]
-enabled = true
-filter = sshd
-backend = systemd
-maxretry = 3
-bantime = 3600
-findtime = 600
-EOF
-  configure_fail2ban_systemd_backend
+  admin_user=""
+  secure_server_create_admin_user
 
+  # =====================================================================
+  # FASE 4 — Hardening (el admin ya tiene acceso garantizado)
+  # =====================================================================
+  log "Paso 3/4 — Aplicando hardening del sistema..."
+
+  # --- UFW ---
+  log "Configurando UFW..."
+  ufw --force reset
+  ufw default deny incoming || error "Error al configurar política de denegación de UFW"
+  ufw default allow outgoing || error "Error al configurar política de salida de UFW"
+  ufw allow "${ssh_port}/tcp" || error "Error al configurar puerto SSH en UFW"
+  ufw allow http || error "Error al permitir HTTP en UFW"
+  ufw allow https || error "Error al permitir HTTPS en UFW"
+  ufw --force enable || error "Error al habilitar UFW"
+
+  # --- Actualizaciones automáticas ---
+  log "Configurando actualizaciones automáticas..."
+  cat >/etc/apt/apt.conf.d/50unattended-upgrades-custom <<EOF
+Unattended-Upgrade::Automatic-Reboot "false";
+Unattended-Upgrade::Automatic-Reboot-Time "02:00";
+EOF
+  dpkg-reconfigure -plow unattended-upgrades || error "Error al configurar actualizaciones automáticas"
+
+  # --- SSH hardening ---
+  log "Aplicando configuración hardened de SSH..."
+  deploy_sshd_config "$ssh_port" "$password_auth"
+
+  # --- fail2ban ---
+  configure_fail2ban_jail "$ssh_port"
+
+  # --- Límites del sistema ---
   log "Configurando límites del sistema..."
   cat >/etc/security/limits.conf <<EOF
 *               soft    nofile          65535
@@ -256,33 +309,56 @@ DefaultLimitNOFILE=65535
 DefaultLimitNPROC=65535
 EOF
 
+  # --- Timezone y NTP ---
   log "Configurando timezone..."
-  timedatectl set-timezone UTC || error "Error al configurar timezone"
+  while true; do
+    echo ""
+    echo -e "  Zonas horarias disponibles (ejemplos):"
+    echo -e "    ${GREEN}timedatectl list-timezones${NC} — muestra todas las zonas"
+    echo -e "    America/Argentina/Buenos_Aires  America/Mexico_City  America/Santiago"
+    echo -e "    Europe/Madrid  Europe/London  Asia/Tokyo  UTC"
+    echo ""
+    read -r -p "  Ingrese la zona horaria (Enter para UTC): " timezone
+    timezone=${timezone:-UTC}
+    if timedatectl set-timezone "$timezone" 2>/dev/null; then
+      log "Zona horaria configurada: $timezone"
+      break
+    else
+      warn "Zona horaria \"$timezone\" no válida. Ejecutá 'timedatectl list-timezones' para ver las zonas disponibles."
+    fi
+  done
 
   log "Configurando NTP..."
   systemctl enable systemd-timesyncd || error "Error al habilitar systemd-timesyncd"
   systemctl start systemd-timesyncd || error "Error al iniciar systemd-timesyncd"
 
+  # --- Auditoría ---
   log "Configurando auditoría de seguridad..."
   systemctl enable auditd || error "Error al habilitar auditd"
   systemctl start auditd || error "Error al iniciar auditd"
 
-  admin_user=""
-  secure_server_create_admin_user "$password_auth"
+  # =====================================================================
+  # FASE 5 — Reinicio de servicios (acceso garantizado)
+  # =====================================================================
+  log "Paso 4/4 — Aplicando configuración y reiniciando servicios..."
 
-  log "Reiniciando servicios..."
+  systemctl enable fail2ban || error "Error al habilitar fail2ban"
   systemctl restart fail2ban || error "Error al reiniciar fail2ban"
   sshd -t || error "Error en la configuración de SSH. No se reiniciará el servicio"
   systemctl restart ssh || error "Error al reiniciar ssh"
 
+  # =====================================================================
+  # Resumen final
+  # =====================================================================
   log "Configuración de seguridad completada con éxito"
-  log "Puntos importantes:"
+  log "Resumen de cambios aplicados:"
   log "  - SSH root login deshabilitado"
   log "  - Autenticación por contraseña: $password_auth"
   log "  - Puerto SSH configurado: $ssh_port"
-  log "  - Firewall configurado para permitir solo SSH, HTTP y HTTPS"
-  log "  - Fail2ban implementado con backend systemd para Debian 13"
+  log "  - Firewall UFW activo: solo SSH, HTTP y HTTPS"
+  log "  - Fail2ban activo con backend systemd (Debian 12/13)"
   log "  - Actualizaciones automáticas configuradas"
-  log "  - Usuario administrador configurado: $admin_user"
-  log "  - Solo los usuarios en el grupo 'sshusers' pueden acceder via SSH"
+  log "  - Usuario administrador: $admin_user (grupos sudo + sshusers)"
+  log "  - Solo miembros del grupo 'sshusers' pueden acceder vía SSH"
+  log "  - Timezone $timezone, NTP y auditd habilitados"
 }

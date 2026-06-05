@@ -36,8 +36,6 @@ docker_ulimit_nofile: 64000
 
 # === Traefik + Portainer ===
 install_dir: /opt/traefik-portainer
-traefik_image: traefik:v3.0
-portainer_image: portainer/portainer-ce:2.21.5
 traefik_subdomain: traefik
 portainer_subdomain: portainer
 proxy_network: proxy
