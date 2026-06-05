@@ -1,12 +1,14 @@
 # ANSIBLE-MIGRATION.md
 
-Guía completa para migrar el proyecto `server-debian13-install-traefik-portainer` de scripts Bash a un proyecto Ansible estructurado.
+Guía completa del proyecto Ansible para `server-debian13-install-traefik-portainer`.
+
+> **Estado real hoy**: la implementación Ansible **soporta Debian 12 y Debian 13**, con **Debian 13** como ruta más validada. **Ubuntu sigue sin soporte**. Los scripts Bash siguen disponibles para instalaciones rápidas en un único servidor. La fuente de verdad sobre soporte y roadmap es **[`PLATFORM-SUPPORT.md`](PLATFORM-SUPPORT.md)**.
 
 ---
 
 ## 1. Introducción y motivación
 
-Los scripts Bash actuales (`main.sh` + `modules/*.sh`) funcionan, pero presentan limitaciones que se vuelven críticas al escalar o automatizar:
+Los scripts Bash (`main.sh` + `modules/*.sh`) funcionan para instalaciones rápidas en un solo servidor, pero presentan limitaciones que se vuelven críticas al escalar o automatizar. La variante Ansible está pensada para resolver gran parte de esas limitaciones y hoy concentra la mejor cobertura del repo en Debian 13:
 
 | Limitación (Bash) | Solución (Ansible) |
 |---|---|
@@ -27,7 +29,7 @@ Los scripts Bash actuales (`main.sh` + `modules/*.sh`) funcionan, pero presentan
 - Entornos CI/CD o cloud-init
 - Equipos donde varios desarrolladores deben aplicar la misma configuración de forma reproducible
 
-Los scripts Bash siguen siendo válidos para instalación inicial rápida en un único servidor de desarrollo.
+Los scripts Bash siguen siendo válidos para instalación inicial rápida en un único servidor. Para decidir qué plataforma usar hoy, consultá también `PLATFORM-SUPPORT.md`.
 
 ---
 
@@ -37,16 +39,16 @@ Los scripts Bash siguen siendo válidos para instalación inicial rápida en un 
 |---|---|---|---|
 | `common.sh` — variables globales | `group_vars/all.yml` | — | Variables centralizadas, sin lógica |
 | `common.sh` — `log()`, `warn()`, `error()` | `debug:`, `fail:` tasks | `ansible.builtin.debug`, `ansible.builtin.fail` | Ansible loguea automáticamente con `-v` |
-| `common.sh` — `detect_debian_version()` | `roles/common/tasks/assert_debian.yml` | `ansible.builtin.assert` | Valida OS al inicio del play |
+| `common.sh` — `detect_debian_version()` | `roles/common/tasks/main.yml` | `ansible.builtin.assert` | Valida Debian 12/13 y bloquea Ubuntu al inicio del play |
 | `secure_server.sh` — `apt-get update/upgrade` | `roles/security/tasks/packages.yml` | `ansible.builtin.apt` | `update_cache: yes`, `upgrade: dist` |
 | `secure_server.sh` — instalar paquetes esenciales | `roles/security/tasks/packages.yml` | `ansible.builtin.apt` | Lista en `defaults/main.yml` |
-| `secure_server.sh` — unattended-upgrades | `roles/security/tasks/unattended_upgrades.yml` | `ansible.builtin.template` | Template `50unattended-upgrades.j2` |
+| `secure_server.sh` — unattended-upgrades | `roles/security/tasks/packages.yml` | `ansible.builtin.template` | Template `50unattended-upgrades-custom.j2` |
 | `secure_server.sh` — UFW reset/default policies | `roles/security/tasks/ufw.yml` | `community.general.ufw` | `state: reset` luego reglas individuales |
 | `secure_server.sh` — UFW allow SSH/HTTP/HTTPS | `roles/security/tasks/ufw.yml` | `community.general.ufw` | Puerto SSH desde variable `ssh_port` |
 | `secure_server.sh` — sshd_config (heredoc) | `roles/security/templates/sshd_config.j2` | `ansible.builtin.template` | Jinja2 con todas las variables |
 | `secure_server.sh` — grupo sshusers | `roles/security/tasks/users.yml` | `ansible.builtin.group` | `state: present` |
 | `secure_server.sh` — usuario admin + sudo | `roles/security/tasks/users.yml` | `ansible.builtin.user` | `groups: [sudo, sshusers]` |
-| `secure_server.sh` — fail2ban jail.local | `roles/security/templates/jail.local.j2` | `ansible.builtin.template` | Template con `ssh_port`, backend systemd |
+| `secure_server.sh` — fail2ban jail.local | `roles/security/templates/jail.local.j2` | `ansible.builtin.template` | Template con `ssh_port`, backend systemd en Debian 12/13 |
 | `secure_server.sh` — paths-debian.conf (Debian 13) | `roles/security/tasks/fail2ban.yml` | `ansible.builtin.lineinfile` | Solo si `ansible_distribution_major_version >= 13` |
 | `secure_server.sh` — limits.conf | `roles/security/templates/limits.conf.j2` | `ansible.builtin.template` | |
 | `secure_server.sh` — systemd limits.conf | `roles/security/templates/systemd_limits.conf.j2` | `ansible.builtin.template` | En `/etc/systemd/system.conf.d/` |
@@ -63,7 +65,7 @@ Los scripts Bash siguen siendo válidos para instalación inicial rápida en un 
 | `install_docker.sh` — `/opt/docker-compose` | `roles/docker/tasks/dirs.yml` | `ansible.builtin.file` | `state: directory`, `mode: '0755'` |
 | `install_traefik.sh` — apache2-utils | `roles/traefik_portainer/tasks/prereqs.yml` | `ansible.builtin.apt` | |
 | `install_traefik.sh` — directorios de instalación | `roles/traefik_portainer/tasks/dirs.yml` | `ansible.builtin.file` | `/opt/traefik-portainer/...` |
-| `install_traefik.sh` — docker-compose.yml | `roles/traefik_portainer/templates/docker-compose.yml.j2` | `ansible.builtin.template` | Sin IPs estáticas, con versiones pinadas |
+| `install_traefik.sh` — docker-compose.yml | `roles/traefik_portainer/templates/docker-compose.yml.j2` | `ansible.builtin.template` | Sin IPs estáticas, con versión de Portainer derivada del archivo canónico compartido |
 | `install_traefik.sh` — traefik.yml | `roles/traefik_portainer/templates/traefik.yml.j2` | `ansible.builtin.template` | |
 | `install_traefik.sh` — dynamic.yml | `roles/traefik_portainer/templates/dynamic.yml.j2` | `ansible.builtin.template` | `traefik_auth` desde vault |
 | `install_traefik.sh` — acme.json (chmod 600) | `roles/traefik_portainer/tasks/acme.yml` | `ansible.builtin.file` | `state: touch`, `mode: '0600'` (solo si no existe) |
@@ -77,7 +79,7 @@ Los scripts Bash siguen siendo válidos para instalación inicial rápida en un 
 
 ---
 
-## 3. Arquitectura Ansible propuesta
+## 3. Arquitectura Ansible implementada
 
 ### 3.1 Árbol de carpetas completo
 
@@ -114,14 +116,13 @@ ansible/
 │   │   ├── tasks/
 │   │   │   ├── main.yml                 # Incluye todos los subtasks
 │   │   │   ├── packages.yml             # apt update/upgrade + paquetes
-│   │   │   ├── ufw.yml                  # Firewall UFW
-│   │   │   ├── ssh.yml                  # sshd_config + grupo sshusers
-│   │   │   ├── users.yml                # Usuario administrador
-│   │   │   ├── fail2ban.yml             # fail2ban + jail.local
+│   │   │   ├── ufw.yml                  # Firewall UFW (reset + reglas)
+│   │   │   ├── ssh.yml                  # sshd_config + backup + validación
+│   │   │   ├── fail2ban.yml             # fail2ban + jail.local + backend systemd
 │   │   │   ├── limits.yml               # limits.conf + systemd limits
-│   │   │   ├── time.yml                 # Timezone + NTP
-│   │   │   ├── audit.yml                # auditd
-│   │   │   └── unattended_upgrades.yml  # Actualizaciones automáticas
+│   │   │   ├── timezone.yml             # Timezone UTC + NTP
+│   │   │   ├── auditd.yml               # auditd habilitado
+│   │   │   └── admin_user.yml           # Usuario admin + grupo sshusers
 │   │   ├── handlers/
 │   │   │   └── main.yml                 # Restart ssh, fail2ban, ufw reload
 │   │   ├── defaults/
@@ -130,39 +131,39 @@ ansible/
 │   │   │   ├── sshd_config.j2           # /etc/ssh/sshd_config
 │   │   │   ├── jail.local.j2            # /etc/fail2ban/jail.local
 │   │   │   ├── limits.conf.j2           # /etc/security/limits.conf
-│   │   │   ├── systemd_limits.conf.j2   # /etc/systemd/system.conf.d/limits.conf
-│   │   │   └── 50unattended-upgrades.j2 # /etc/apt/apt.conf.d/50unattended-upgrades-custom
+│   │   │   └── systemd_limits.conf.j2   # /etc/systemd/system.conf.d/limits.conf
+│   │   ├── molecule/default/            # Tests Molecule
+│   │   │   ├── molecule.yml
+│   │   │   ├── converge.yml
+│   │   │   └── tests/test_default.py
 │   │   └── meta/
 │   │       └── main.yml
 │   │
 │   ├── docker/
 │   │   ├── tasks/
 │   │   │   ├── main.yml                 # Incluye todos los subtasks
-│   │   │   ├── remove_old.yml           # Eliminar instalaciones previas
-│   │   │   ├── repo.yml                 # Repositorio oficial + GPG
-│   │   │   ├── install.yml              # Instalar paquetes Docker
-│   │   │   ├── daemon.yml               # daemon.json
-│   │   │   ├── users.yml                # Usuario para el grupo docker
-│   │   │   └── dirs.yml                 # /opt/docker-compose
+│   │   │   ├── repo.yml                 # Repositorio oficial + GPG key
+│   │   │   ├── install.yml              # Instalar Docker + clean install opcional + verify
+│   │   │   └── daemon.yml               # daemon.json template
 │   │   ├── handlers/
 │   │   │   └── main.yml                 # Restart Docker
 │   │   ├── defaults/
-│   │   │   └── main.yml                 # docker_user, log config, etc.
+│   │   │   └── main.yml                 # docker_user, log config, docker_clean_install, etc.
 │   │   ├── templates/
 │   │   │   └── daemon.json.j2           # /etc/docker/daemon.json
+│   │   ├── molecule/default/            # Tests Molecule
+│   │   │   ├── molecule.yml
+│   │   │   ├── converge.yml
+│   │   │   └── tests/test_default.py
 │   │   └── meta/
 │   │       └── main.yml
 │   │
 │   ├── traefik_portainer/
 │   │   ├── tasks/
 │   │   │   ├── main.yml                 # Incluye todos los subtasks
-│   │   │   ├── prereqs.yml              # apache2-utils y deps
-│   │   │   ├── dirs.yml                 # Crear directorios
+│   │   │   ├── prepare.yml              # apache2-utils, directorios, basicAuth hash
 │   │   │   ├── network.yml              # Red Docker "proxy"
-│   │   │   ├── config.yml               # Templates de configuración
-│   │   │   ├── acme.yml                 # acme.json con permisos 600
-│   │   │   ├── deploy.yml               # docker compose up -d
-│   │   │   └── firewall.yml             # UFW 80/443
+│   │   │   └── install.yml              # Templates + deploy + firewall + verify
 │   │   ├── handlers/
 │   │   │   └── main.yml                 # Recrear contenedores si config cambia
 │   │   ├── defaults/
@@ -171,25 +172,26 @@ ansible/
 │   │   │   ├── docker-compose.yml.j2    # Stack completo Traefik + Portainer
 │   │   │   ├── traefik.yml.j2           # Configuración estática Traefik
 │   │   │   └── dynamic.yml.j2           # Middlewares, TLS, basicAuth
+│   │   ├── molecule/default/            # Tests Molecule
+│   │   │   ├── molecule.yml
+│   │   │   ├── converge.yml
+│   │   │   └── tests/test_default.py
 │   │   └── meta/
 │   │       └── main.yml                 # depends_on: [docker]
 │   │
 │   └── update/
 │       ├── tasks/
-│       │   ├── main.yml                 # Incluye pull, deploy, prune
-│       │   ├── pull.yml                 # docker compose pull
-│       │   ├── deploy.yml               # docker compose up -d
-│       │   └── prune.yml                # docker image prune
+│       │   └── main.yml                 # Pull, deploy, prune en un solo archivo
 │       ├── defaults/
 │       │   └── main.yml                 # install_dir
+│       ├── molecule/default/            # Tests Molecule
+│       │   ├── molecule.yml
+│       │   ├── converge.yml
+│       │   └── tests/test_default.py
 │       └── meta/
 │           └── main.yml                 # depends_on: [docker]
 │
-└── molecule/                            # Tests con Molecule (fase 4)
-    └── default/
-        ├── molecule.yml
-        ├── converge.yml
-        └── verify.yml
+└── (Molecule tests integrados en cada role — ver sección 12)
 ```
 
 ### 3.2 Descripción de cada role
@@ -198,14 +200,21 @@ ansible/
 
 **`tasks/main.yml`** — Lista de tareas:
 1. Verificar que el sistema operativo es Debian (assert)
-2. Verificar que la versión de Debian es >= 12 (assert)
-3. Instalar paquetes de utilidad base (curl, gnupg, lsb-release, ca-certificates)
-4. Actualizar la caché de apt
+2. Verificar que la versión de Debian sea 12 o 13 (assert)
+3. Publicar facts `common_debian_major_version` y `common_debian_release` para los roles siguientes
+4. Instalar paquetes de utilidad base (curl, gnupg, lsb-release, ca-certificates)
+5. Actualizar la caché de apt
 
 **`handlers/main.yml`** — No requiere handlers.
 
 **`defaults/main.yml`** — Variables:
 ```yaml
+common_supported_debian_versions:
+  - 12
+  - 13
+common_supported_debian_releases:
+  12: bookworm
+  13: trixie
 common_base_packages:
   - curl
   - gnupg
@@ -230,14 +239,13 @@ dependencies: []
 **`tasks/main.yml`** — Lista de includes:
 ```yaml
 - import_tasks: packages.yml
-- import_tasks: unattended_upgrades.yml
 - import_tasks: ufw.yml
 - import_tasks: ssh.yml
-- import_tasks: users.yml
 - import_tasks: fail2ban.yml
 - import_tasks: limits.yml
-- import_tasks: time.yml
-- import_tasks: audit.yml
+- import_tasks: timezone.yml
+- import_tasks: auditd.yml
+- import_tasks: admin_user.yml
 ```
 
 **`tasks/packages.yml`** — Tareas:
@@ -246,19 +254,19 @@ dependencies: []
 3. `apt: name={{ security_optional_packages }} state=present` — opcionales, `ignore_errors: yes`
 
 **`tasks/ssh.yml`** — Tareas:
-1. Crear backup de sshd_config (`ansible.builtin.copy` con remote_src)
+1. Instalar `openssh-server` para asegurar la presencia de `sshd`
 2. Desplegar template `sshd_config.j2` → `/etc/ssh/sshd_config`
 3. Validar configuración (`command: sshd -t`) antes de reiniciar
 4. Notify handler `Restart SSH`
 
-**`tasks/users.yml`** — Tareas:
+**`tasks/admin_user.yml`** — Tareas:
 1. Crear grupo `sshusers` (`ansible.builtin.group`)
 2. Crear usuario admin si no existe (`ansible.builtin.user`)
 3. Añadir admin a grupos `sudo`, `sshusers`
 4. Si `admin_ssh_public_key` definida, añadir authorized_key
 
 **`tasks/fail2ban.yml`** — Tareas:
-1. Desplegar template `jail.local.j2` → `/etc/fail2ban/jail.local`
+1. Desplegar template `jail.local.j2` → `/etc/fail2ban/jail.local` con backend `systemd` para Debian 12/13
 2. Si Debian >= 13: añadir `sshd_backend = systemd` a `paths-debian.conf` (`lineinfile`)
 3. Notify handler `Restart fail2ban`
 
@@ -267,11 +275,11 @@ dependencies: []
 2. Crear directorio `/etc/systemd/system.conf.d/`
 3. Desplegar template `systemd_limits.conf.j2`
 
-**`tasks/time.yml`** — Tareas:
+**`tasks/timezone.yml`** — Tareas:
 1. `community.general.timezone: name=UTC`
 2. `systemd: name=systemd-timesyncd enabled=yes state=started`
 
-**`tasks/audit.yml`** — Tareas:
+**`tasks/auditd.yml`** — Tareas:
 1. `systemd: name=auditd enabled=yes state=started`
 
 **`handlers/main.yml`**:
@@ -301,6 +309,7 @@ security_packages:
   - debconf
   - systemd-timesyncd
   - auditd
+  - openssh-server
 security_optional_packages:
   - apticron
 fail2ban_bantime: 3600
@@ -312,10 +321,10 @@ system_nproc_limit: 65535
 
 **`templates/`**:
 - `sshd_config.j2` — Template completo de `/etc/ssh/sshd_config` con todas las directivas del script original, usando variables `{{ ssh_port }}`, `{{ ssh_password_auth }}`
-- `jail.local.j2` — Template de fail2ban con `{{ ssh_port }}`, `{{ fail2ban_bantime }}`, `{{ fail2ban_maxretry }}`, backend systemd condicional
+- `jail.local.j2` — Template de fail2ban con `{{ ssh_port }}`, `{{ fail2ban_bantime }}`, `{{ fail2ban_maxretry }}`, backend systemd para Debian 12/13
 - `limits.conf.j2` — Template con `{{ system_nofile_limit }}`, `{{ system_nproc_limit }}`
 - `systemd_limits.conf.j2` — Template sección `[Manager]`
-- `50unattended-upgrades.j2` — Template para configuración de upgrades automáticos
+- `50unattended-upgrades-custom.j2` — Template para configuración de upgrades automáticos
 
 **`meta/main.yml`**:
 ```yaml
@@ -329,38 +338,29 @@ dependencies:
 
 **`tasks/main.yml`** — Includes:
 ```yaml
-- import_tasks: remove_old.yml
 - import_tasks: repo.yml
 - import_tasks: install.yml
 - import_tasks: daemon.yml
-- import_tasks: users.yml
-- import_tasks: dirs.yml
 ```
-
-**`tasks/remove_old.yml`** — Tareas:
-1. `apt: name={{ docker_old_packages }} state=absent purge=yes` — eliminar versiones antiguas
-2. `file: path={{ item }} state=absent` — borrar `/var/lib/docker`, `/var/lib/containerd`
 
 **`tasks/repo.yml`** — Tareas:
 1. `file: path=/etc/apt/keyrings state=directory mode=0755`
 2. `get_url` para descargar GPG key de Docker
-3. Decodificar GPG con `command: gpg --dearmor` (o `ansible.builtin.apt_key` para versiones antiguas)
+3. Decodificar GPG con `command: gpg --dearmor`
 4. `apt_repository` para añadir el repositorio oficial
 
 **`tasks/install.yml`** — Tareas:
-1. `apt: name={{ docker_packages }} state=present update_cache=yes`
-2. `systemd: name=docker enabled=yes state=started`
-3. `systemd: name=containerd enabled=yes state=started`
+1. Si `docker_clean_install: true`: borrar `/var/lib/docker` y `/var/lib/containerd`
+2. `apt: name={{ docker_old_packages }} state=absent` — eliminar versiones antiguas
+3. `apt: name={{ docker_packages }} state=present update_cache=yes`
+4. `systemd: name=docker enabled=yes state=started`
+5. `systemd: name=containerd enabled=yes state=started`
+6. Verificar instalación con `docker --version` y `docker compose version`
+7. Crear directorio `/opt/docker-compose`
 
 **`tasks/daemon.yml`** — Tareas:
 1. `file: path=/etc/docker state=directory`
 2. Template `daemon.json.j2` → `/etc/docker/daemon.json`, notify `Restart Docker`
-
-**`tasks/users.yml`** — Tareas:
-1. Cuando `docker_user` está definido y no vacío: `user: name={{ docker_user }} groups=docker append=yes`
-
-**`tasks/dirs.yml`** — Tareas:
-1. `file: path=/opt/docker-compose state=directory mode=0755`
 
 **`handlers/main.yml`**:
 - `Restart Docker` → `systemd: name=docker state=restarted`
@@ -369,6 +369,7 @@ dependencies:
 ```yaml
 docker_user: ""
 docker_install_dir: /opt/docker-compose
+docker_clean_install: false          # Si true, borra /var/lib/docker y /var/lib/containerd
 docker_log_max_size: "10m"
 docker_log_max_file: "3"
 docker_ulimit_nofile: 64000
@@ -401,40 +402,28 @@ dependencies:
 
 **`tasks/main.yml`** — Includes:
 ```yaml
-- import_tasks: prereqs.yml
-- import_tasks: dirs.yml
+- import_tasks: prepare.yml
 - import_tasks: network.yml
-- import_tasks: config.yml
-- import_tasks: acme.yml
-- import_tasks: deploy.yml
-- import_tasks: firewall.yml
+- import_tasks: install.yml
 ```
 
-**`tasks/prereqs.yml`** — Tareas:
+**`tasks/prepare.yml`** — Tareas:
 1. `apt: name=apache2-utils state=present`
-2. Generar hash bcrypt para basicAuth usando `htpasswd` o módulo `passlib` de Python
-
-**`tasks/dirs.yml`** — Tareas:
-1. `file: path={{ install_dir }}/traefik-data/configurations state=directory`
-2. `file: path={{ install_dir }}/portainer-data state=directory`
+2. Generar hash bcrypt para basicAuth usando `htpasswd`
+3. Crear directorios de instalación (`traefik-data/configurations`, `portainer-data`)
+4. Crear `acme.json` con permisos 600 (solo si no existe)
 
 **`tasks/network.yml`** — Tareas:
 1. `community.docker.docker_network: name=proxy driver=bridge ipam_config=[{subnet: "{{ proxy_subnet }}"}]`
 
-**`tasks/config.yml`** — Tareas:
+**`tasks/install.yml`** — Tareas:
 1. Template `docker-compose.yml.j2` → `{{ install_dir }}/docker-compose.yml`, notify `Recreate containers`
 2. Template `traefik.yml.j2` → `{{ install_dir }}/traefik-data/traefik.yml`, notify `Recreate containers`
 3. Template `dynamic.yml.j2` → `{{ install_dir }}/traefik-data/configurations/dynamic.yml`, notify `Recreate containers`
-
-**`tasks/acme.yml`** — Tareas:
-1. `file: path={{ install_dir }}/traefik-data/acme.json state=touch mode=0600` (solo si no existe: `creates`)
-
-**`tasks/deploy.yml`** — Tareas:
-1. `community.docker.docker_compose_v2: project_src={{ install_dir }} state=present pull=missing`
-
-**`tasks/firewall.yml`** — Tareas:
-1. `community.general.ufw: rule=allow port=80 proto=tcp`
-2. `community.general.ufw: rule=allow port=443 proto=tcp`
+4. `community.docker.docker_compose_v2: project_src={{ install_dir }} state=present pull=missing`
+5. `community.general.ufw: rule=allow port=80 proto=tcp`
+6. `community.general.ufw: rule=allow port=443 proto=tcp`
+7. Verificar despliegue con `docker compose ps`
 
 **`handlers/main.yml`**:
 - `Recreate containers` → `community.docker.docker_compose_v2: project_src={{ install_dir }} state=present recreate=always`
@@ -442,8 +431,12 @@ dependencies:
 **`defaults/main.yml`**:
 ```yaml
 install_dir: /opt/traefik-portainer
-traefik_image: "traefik:v3.3"          # Pinado, no :latest
-portainer_image: "portainer/portainer-ce:2.21.5"  # Pinado, no :latest
+traefik_version_file: "{{ role_path | dirname | dirname }}/inventory/group_vars/all/versions.env"
+traefik_version: "{{ lookup('ansible.builtin.ini', 'TRAEFIK_VERSION type=properties file=' ~ traefik_version_file) }}"
+traefik_image: "traefik:{{ traefik_version }}"  # Pinado, no :latest
+portainer_version_file: "{{ role_path | dirname | dirname }}/inventory/group_vars/all/versions.env"
+portainer_version: "{{ lookup('ansible.builtin.ini', 'PORTAINER_VERSION type=properties file=' ~ portainer_version_file) }}"
+portainer_image: "portainer/portainer-ce:{{ portainer_version }}"
 base_domain: ""                         # REQUERIDO
 traefik_subdomain: traefik
 portainer_subdomain: portainer
@@ -470,21 +463,10 @@ dependencies:
 
 #### Role: `update`
 
-**`tasks/main.yml`** — Includes:
-```yaml
-- import_tasks: pull.yml
-- import_tasks: deploy.yml
-- import_tasks: prune.yml
-```
-
-**`tasks/pull.yml`** — Tareas:
+**`tasks/main.yml`** — Todas las tareas en un solo archivo:
 1. `community.docker.docker_compose_v2: project_src={{ install_dir }} pull=always state=present`
-
-**`tasks/deploy.yml`** — Tareas:
-1. `community.docker.docker_compose_v2: project_src={{ install_dir }} state=present recreate=auto`
-
-**`tasks/prune.yml`** — Tareas:
-1. `community.docker.docker_prune: images=yes images_filters={dangling: true}`
+2. `community.docker.docker_compose_v2: project_src={{ install_dir }} state=present recreate=auto`
+3. `community.docker.docker_prune: images=yes images_filters={dangling: true}`
 
 **`defaults/main.yml`**:
 ```yaml
@@ -530,14 +512,14 @@ fail2ban_default_maxretry: 5
 
 # === Docker ===
 docker_user: ""
+docker_clean_install: false       # Si true, borra /var/lib/docker y /var/lib/containerd
 docker_log_max_size: "10m"
 docker_log_max_file: "3"
 docker_ulimit_nofile: 64000
 
 # === Traefik + Portainer ===
 install_dir: /opt/traefik-portainer
-traefik_image: "traefik:v3.3"
-portainer_image: "portainer/portainer-ce:2.21.5"
+# traefik_image y portainer_image se derivan desde inventory/group_vars/all/versions.env
 traefik_subdomain: traefik
 portainer_subdomain: portainer
 proxy_network: proxy
@@ -561,10 +543,6 @@ vault_traefik_password: "supersecretpassword"
 
 # === SSH ===
 vault_admin_ssh_public_key: "ssh-ed25519 AAAA... user@host"
-
-# === Contraseña del usuario admin (hash shadow) ===
-# Generar con: python3 -c "import crypt; print(crypt.crypt('PASSWORD', crypt.mksalt(crypt.METHOD_SHA512)))"
-vault_admin_password_hash: "$6$rounds=..."
 ```
 
 **Referencias en `vars.yml`** (para usar las variables vault sin exponer nombres):
@@ -580,7 +558,6 @@ admin_ssh_public_key: "{{ vault_admin_ssh_public_key }}"
 - `vault_traefik_user`
 - `vault_traefik_password`
 - `vault_admin_ssh_public_key`
-- `vault_admin_password_hash`
 
 ---
 
@@ -621,19 +598,18 @@ all:
           ansible_port: 2222
           base_domain: "prod2.midominio.com"
       vars:
-        traefik_image: "traefik:v3.3"
-        portainer_image: "portainer/portainer-ce:2.21.5"
+        traefik_image: "traefik:v3.7.4"
 
     staging:
       hosts:
         staging-server-01:
           ansible_host: 198.51.100.5
-          ansible_user: ubuntu
+          ansible_user: admin
           ansible_port: 22
           base_domain: "staging.midominio.com"
       vars:
         ssh_password_auth: "yes"   # más permisivo en staging
-        traefik_image: "traefik:v3.3"
+        traefik_image: "traefik:v3.7.4"
 
   vars:
     ansible_python_interpreter: /usr/bin/python3
@@ -645,16 +621,19 @@ all:
 
 ### 6.1 Imágenes de contenedor pinadas
 
-**Problema actual:** `portainer/portainer-ce:latest` puede cambiar de versión en cualquier `docker pull`, causando actualizaciones involuntarias y potenciales roturas.
+**Problema original:** `portainer/portainer-ce:latest` puede cambiar de versión en cualquier `docker pull`, causando actualizaciones involuntarias y potenciales roturas.
 
-**Solución Ansible:**
+**Solución actual:**
 ```yaml
-# defaults/main.yml del role traefik_portainer
-traefik_image: "traefik:v3.3"
-portainer_image: "portainer/portainer-ce:2.21.5"
+# ansible/inventory/group_vars/all/versions.env   (Ansible)
+# modules/versions.env                             (Bash — independiente)
+PORTAINER_VERSION=2.39.3
+TRAEFIK_VERSION=v3.7.4
 ```
 
-Actualizar a una nueva versión es un cambio de una sola línea en `vars.yml`, revisable en PR y con historial en git.
+Ambos sistemas tienen su propio `versions.env` independiente. Actualizar una versión requiere editar ambos archivos — cambio simple, revisable en PR, sin dependencia cruzada entre Bash y Ansible.
+
+> **Importante**: El script `update_traefik.sh` (opción 4 del menú) y el playbook `update.yml` **no detectan nuevas versiones automáticamente**. Solo verifican si el digest de la imagen pinada cambió (ej: security patch de la misma versión). Para cambiar de versión (ej: de v3.7.4 a v3.8.0), hay que editar manualmente los archivos `versions.env`.
 
 ### 6.2 Sin IPs estáticas en la red Docker
 
@@ -717,8 +696,8 @@ ansible-playbook playbooks/site.yml --vault-password-file ~/.vault_pass
 Todos los archivos de configuración usan templates Jinja2:
 
 - `sshd_config.j2` — Elimina el heredoc frágil del script, valida antes de aplicar
-- `jail.local.j2` — Configura backend systemd condicionalmente con `{% if ansible_distribution_major_version | int >= 13 %}`
-- `docker-compose.yml.j2` — Imágenes pinadas, sin IPs estáticas, variables en un solo lugar
+- `jail.local.j2` — Configura backend `systemd` para Debian 12/13 y deja el override extra en `paths-debian.conf` solo para Debian 13+
+- `docker-compose.yml.j2` — Imágenes pinadas, sin IPs estáticas, con versiones de Traefik y Portainer leídas desde `versions.env`
 - `traefik.yml.j2` / `dynamic.yml.j2` — Regenerados automáticamente si cambia email o auth
 - `daemon.json.j2` — Configuración Docker en template versionado
 
@@ -749,10 +728,7 @@ source ~/.ansible-venv/bin/activate
 ```
 
 ```bash
-# Alternativa: desde repositorio oficial Ansible (Debian/Ubuntu)
-sudo add-apt-repository --yes --update ppa:ansible/ansible  # solo Ubuntu
-sudo apt-get install -y ansible
-
+# Alternativa: paquetes del sistema
 # En Debian 13:
 sudo apt-get install -y ansible
 ```
@@ -785,13 +761,15 @@ pip install passlib   # Para generar hashes htpasswd / bcrypt desde Ansible
 pip install jmespath  # Para filtros json_query en Ansible
 ```
 
-### Dependencias en el servidor objetivo (Debian 13)
+### Dependencias en el servidor objetivo (Debian 13 como ruta validada)
 
 ```bash
 # Python 3 debe estar instalado (normalmente ya lo está en Debian 13)
 # Ansible lo comprueba al conectar. Si no está:
 apt-get install -y python3
 ```
+
+> **Importante**: Debian 12 puede llegar a funcionar en algunos casos, pero este documento no debe leerse como validación formal de esa plataforma. Ubuntu sigue fuera de soporte hoy.
 
 ---
 
@@ -913,98 +891,41 @@ ansible-playbook ansible/playbooks/site.yml \
 
 ---
 
-## 9. Plan de migración por fases
+## 9. Estado de la migración y validación
 
-### Fase 1: Estructura de carpetas y roles vacíos (1-2 horas)
+> **Implementación completada; validación y soporte aún en consolidación**
 
-```bash
-# Crear estructura base:
-mkdir -p ansible/{inventory/group_vars/all,playbooks,molecule/default}
-mkdir -p ansible/roles/{common,security,docker,traefik_portainer,update}/{tasks,handlers,defaults,templates,meta}
+Las piezas principales de la migración están implementadas, pero no todas tienen el mismo nivel de validación operativa ni implican soporte oficial multiplataforma:
 
-# Crear ansible.cfg:
-cat > ansible/ansible.cfg << 'EOF'
-[defaults]
-inventory          = inventory/hosts.yml
-roles_path         = roles
-collections_paths  = ~/.ansible/collections
-host_key_checking  = False
-stdout_callback    = yaml
-interpreter_python = auto_silent
+| Fase | Descripción | Estado |
+|------|-------------|--------|
+| 1 | Estructura de carpetas, `ansible.cfg`, roles base, vault cifrado | ✅ Implementada |
+| 2 | Implementación de los 5 roles con mejoras sobre los scripts | ✅ Implementada |
+| 3 | Tests Molecule para todos los roles + workflow CI | ✅ Implementada en Debian 12/13 |
+| 4 | Validación operativa adicional en VM/host real | 🔲 Pendiente de reforzar |
+| 5 | Sincerar y cerrar claims de soporte por plataforma | 🔲 Pendiente |
 
-[privilege_escalation]
-become      = True
-become_method = sudo
-EOF
+### Mejoras implementadas sobre los scripts Bash
 
-# Instalar colecciones:
-ansible-galaxy collection install -r ansible/requirements.yml
-```
+- Imágenes Docker pinadas (Traefik v3.7.4, Portainer 2.39.3) con versiones centralizadas en `versions.env` (independiente para Bash y Ansible)
+- Sin IPs estáticas en la red Docker proxy
+- Backup automático de `sshd_config` antes de reemplazar
+- Validación de `sshd -t` antes de reiniciar SSH
+- Validación de email y dominio con regex
+- `docker_compose_v2` en lugar de `docker_compose` (legacy)
+- `experimental: false` eliminado de `daemon.json` (redundante)
+- Opción `docker_clean_install` para instalaciones limpias
+- Verificación post-deploy de contenedores
+- `docker_prune` con módulo nativo de Ansible
+- apt upgrade incluido en el role security
+- UFW reset explícito antes de aplicar reglas
+- Red Docker creada como tarea separada e idempotente
 
-Entregable: estructura de carpetas creada, `ansible-playbook --syntax-check` sin errores.
+### Qué NO afirma este documento
 
-### Fase 2: Implementar roles (orden recomendado, 1-2 días)
-
-1. **`common`** — El más simple, sirve como base. Probar con `ping`.
-2. **`security`** — El más crítico. Testear sshd_config en VM antes de producción.
-3. **`docker`** — Dependiente de `common`. Verificar con `docker --version`.
-4. **`traefik_portainer`** — Dependiente de `docker`. Testear primero con dominio de prueba.
-5. **`update`** — El más simple operacionalmente.
-
-Para cada role:
-1. Implementar `defaults/main.yml` con todas las variables
-2. Implementar templates Jinja2 comparando con el heredoc del script original
-3. Implementar tasks de más simple a más compleja
-4. Probar con `--check --diff` antes de aplicar
-
-### Fase 3: Testing con `--check` y Molecule (2-3 días)
-
-```bash
-# Instalar Molecule:
-pip install molecule molecule-docker
-
-# Inicializar tests para el role security:
-cd ansible/roles/security
-molecule init scenario --driver-name docker
-
-# Ejecutar tests:
-molecule test
-```
-
-Pasos del test Molecule:
-1. `molecule create` — levantar contenedor Docker limpio (Debian 13)
-2. `molecule converge` — aplicar el role
-3. `molecule verify` — ejecutar asserts de verificación
-4. `molecule idempotence` — aplicar dos veces, verificar que no cambia nada
-5. `molecule destroy` — destruir el contenedor
-
-### Fase 4: CI/CD con ansible-lint + Molecule (1-2 días)
-
-```bash
-# Instalar ansible-lint:
-pip install ansible-lint
-
-# Ejecutar lint local:
-ansible-lint ansible/playbooks/site.yml
-ansible-lint ansible/roles/security/
-```
-
-**`.github/workflows/ansible-lint.yml`** (ya creado):
-```yaml
-name: Ansible lint
-
-on: [push, pull_request]
-
-jobs:
-  ansible-lint:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - name: Run ansible-lint
-        uses: ansible/ansible-lint@v24
-        with:
-          args: ansible/playbooks/site.yml
-```
+- NO afirma soporte oficial actual para Ubuntu.
+- NO afirma que Debian 12 tenga el mismo nivel de validación que Debian 13.
+- NO reemplaza a `PLATFORM-SUPPORT.md` como fuente de verdad para soporte.
 
 ---
 
@@ -1020,7 +941,7 @@ server-debian13-install-traefik-portainer/
 │       └── ansible-lint.yml      # Ya existe — CI para Ansible
 ├── .shellcheckrc                 # Ya existe
 ├── .ansible-lint                 # Ya existe — configuración ansible-lint
-├── ansible/                      # Proyecto Ansible (NUEVO)
+├── ansible/                      # Proyecto Ansible (implementado)
 │   ├── ansible.cfg
 │   ├── requirements.yml
 │   ├── inventory/
@@ -1059,9 +980,117 @@ server-debian13-install-traefik-portainer/
 | Equipos de más de 1 persona | | ✓ |
 | Staging + producción con variables distintas | | ✓ |
 
+> **Recomendación operativa hoy**: si podés elegir, usá **Ansible sobre Debian 13**. Si necesitás Bash, asumí validación manual propia. Para Debian 12 o Ubuntu, primero revisá `PLATFORM-SUPPORT.md`.
+
 ---
 
-## 11. Referencias y recursos útiles
+## 11. Testing con Molecule
+
+Cada role tiene su propio escenario Molecule bajo `molecule/default/`:
+
+```
+roles/{role}/molecule/default/
+├── molecule.yml          # Configuración del driver (Docker) y plataformas
+├── converge.yml          # Playbook que aplica el role
+└── tests/
+    └── test_default.py   # Verificaciones con testinfra
+```
+
+### Instalación
+
+```bash
+pip install molecule molecule-docker pytest-testinfra
+```
+
+### Ejecutar tests
+
+```bash
+# Para un role específico:
+cd ansible/roles/security
+ANSIBLE_CONFIG=../../ansible.cfg molecule test
+
+# Para todos los roles (desde la raíz del proyecto):
+for role in common security docker traefik_portainer update; do
+  echo "=== Testing $role ==="
+  cd ansible/roles/$role
+  ANSIBLE_CONFIG=../../ansible.cfg molecule test
+  cd ../../..
+done
+```
+
+### Pasos del ciclo Molecule
+
+1. `molecule create` — levanta contenedor Docker limpio (Debian 13)
+2. `molecule converge` — aplica el role al contenedor
+3. `molecule verify` — ejecuta asserts de testinfra
+4. `molecule idempotence` — aplica el role una segunda vez, verifica que no hay cambios
+5. `molecule destroy` — destruye el contenedor
+
+### CI con Molecule
+
+El workflow `.github/workflows/molecule.yml` ejecuta los tests de Molecule en cada push/PR para todos los roles.
+
+### Limitaciones
+
+- Los tests Molecule con Docker no pueden probar todo (p. ej., systemd completo, UFW real, auditd)
+- La cobertura automatizada fuerte hoy está centrada en Debian 13
+- Para validación completa, ejecutar los playbooks en una VM Debian 13 real con `--check --diff`
+- Debian 12 requiere validación específica antes de elevar su claim de soporte
+- Ubuntu requiere implementación y validación propias antes de anunciar soporte
+
+---
+
+## 12. Workflow de ansible-vault
+
+El archivo `ansible/inventory/group_vars/all/vault.yml` está cifrado con ansible-vault. **Nunca** hacer commit de este archivo sin cifrar.
+
+### Configuración inicial
+
+```bash
+# Crear archivo de contraseña (una sola vez):
+echo "tu_contraseña_segura" > ~/.vault_pass
+chmod 600 ~/.vault_pass
+```
+
+### Comandos habituales
+
+```bash
+# Cifrar el vault:
+ansible-vault encrypt ansible/inventory/group_vars/all/vault.yml
+
+# Descifrar para editar:
+ansible-vault decrypt ansible/inventory/group_vars/all/vault.yml
+
+# Editar directamente (descifra, abre editor, cifra al guardar):
+ansible-vault edit ansible/inventory/group_vars/all/vault.yml
+
+# Cifrar un valor individual para pegar en vars.yml:
+ansible-vault encrypt_string 'mi_password_secreta' --name 'vault_traefik_password'
+
+# Ver contenido sin descifrar el archivo:
+ansible-vault view ansible/inventory/group_vars/all/vault.yml
+```
+
+### Ejecutar playbooks con vault
+
+```bash
+# Con prompt interactivo:
+ansible-playbook ansible/playbooks/site.yml --ask-vault-pass
+
+# Con archivo de contraseña:
+ansible-playbook ansible/playbooks/site.yml --vault-password-file ~/.vault_pass
+```
+
+### Variables que DEBEN ir en vault
+
+- `vault_letsencrypt_email`
+- `vault_traefik_user`
+- `vault_traefik_password`
+- `vault_admin_ssh_public_key`
+
+---
+
+## 13. Referencias y recursos útiles
 
 ### Documentación oficial
 

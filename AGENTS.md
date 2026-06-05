@@ -7,21 +7,29 @@ Un agente puede empezar a contribuir leyendo solo este archivo.
 
 ## 1. Descripción del proyecto
 
-**`server-debian13-install-traefik-portainer`** es un instalador modular para configurar un servidor Debian 13 (Trixie) listo para producción con:
+**`server-debian13-install-traefik-portainer`** es un instalador modular para configurar un servidor Debian con foco actual en **Debian 13 (Trixie)**, hoy la ruta más validada del proyecto, con soporte implementado para **Debian 12 y Debian 13** en Bash y Ansible:
 
 - **Hardening de seguridad**: UFW, fail2ban (backend systemd), SSH endurecido, límites del sistema, auditd, actualizaciones automáticas
 - **Docker Engine**: instalación desde repositorio oficial, daemon.json reforzado, usuario de gestión opcional
-- **Traefik v3 + Portainer CE**: reverse proxy con TLS automático (Let's Encrypt) y panel de gestión de contenedores
+- **Traefik v3 + Portainer CE**: reverse proxy con TLS automático (Let's Encrypt) y panel de gestión de contenedores; la versión de Portainer sale de una única fuente canónica compartida por Bash y Ansible
 
 **Stack tecnológico:**
 - Bash 5 (scripts de instalación)
 - Docker Engine + Docker Compose plugin
 - Traefik v3 (reverse proxy)
 - Portainer CE (gestión de contenedores)
-- Ansible (en migración — ver `ANSIBLE-MIGRATION.md`)
-- GitHub Actions (CI con ShellCheck + shfmt)
+- Ansible (implementación actual, soporta Debian 12/13 y sigue más validada en Debian 13 — ver `ANSIBLE-MIGRATION.md`)
+- GitHub Actions (CI con ShellCheck + shfmt + ansible-lint + Molecule)
 
-**Objetivo**: permitir a cualquier persona configurar un servidor Debian 13 seguro con proxy inverso TLS en menos de 30 minutos, ejecutando un único script interactivo como root.
+**Objetivo**: permitir configurar un servidor Debian seguro con proxy inverso TLS en menos de 30 minutos, priorizando hoy Debian 13 como camino recomendado.
+
+> **Estado de soporte hoy**
+>
+> - **Debian 13**: camino más validado
+> - **Debian 12**: soportado en Bash y Ansible, pero con menos validación operativa que Debian 13
+> - **Ubuntu Server**: **no soportado actualmente**
+>
+> La fuente de verdad para soporte y roadmap es **[`PLATFORM-SUPPORT.md`](PLATFORM-SUPPORT.md)**.
 
 ---
 
@@ -33,7 +41,8 @@ server-debian13-install-traefik-portainer/
 ├── .github/
 │   └── workflows/
 │       ├── shell-lint.yml        # CI: ShellCheck + shfmt en cada push/PR
-│       └── ansible-lint.yml      # CI: ansible-lint en cada push/PR
+│       ├── ansible-lint.yml      # CI: ansible-lint en cada push/PR
+│       └── molecule.yml          # CI: Molecule tests para todos los roles
 │
 ├── .shellcheckrc                 # Excepciones globales de ShellCheck
 │                                 #   SC1090/1091: source dinámico
@@ -50,7 +59,7 @@ server-debian13-install-traefik-portainer/
 │
 ├── main.sh                       # Punto de entrada: carga módulos, menú interactivo
 │
-├── ansible/                      # Proyecto Ansible (en migración — ver ANSIBLE-MIGRATION.md)
+├── ansible/                      # Proyecto Ansible (implementado; soporta Debian 12/13 y valida más fuerte hoy en Debian 13)
 │   ├── ansible.cfg
 │   ├── requirements.yml
 │   ├── inventory/
@@ -132,8 +141,8 @@ RED, GREEN, YELLOW, NC                 # Colores para terminal
 
 **Variables en los módulos** (locales a la función, NO exportadas):
 ```bash
-INSTALL_DIR="/opt/traefik-portainer"   # Solo en install_traefik.sh
 ssh_port, base_domain, traefik_user    # Obtenidas por read -p (interactivo)
+# Nota: INSTALL_DIR está centralizado en common.sh
 ```
 
 **Colores**: se usan `$GREEN`, `$YELLOW`, `$RED`, `$NC` de `common.sh`. Nunca definir colores en otros módulos.
@@ -188,11 +197,11 @@ Los scripts obtienen su configuración mediante `read -p` (interactivo). No hay 
 | `email_admin` | `install_traefik.sh` (read) | — (requerido) | Email Let's Encrypt |
 | `traefik_user` | `install_traefik.sh` (read) | — (requerido) | Usuario basicAuth Traefik |
 | `traefik_password` | `install_traefik.sh` (read) | — (requerido) | Contraseña basicAuth Traefik |
-| `INSTALL_DIR` | `install_traefik.sh` (hardcoded) | `/opt/traefik-portainer` | Directorio de instalación |
+| `INSTALL_DIR` | `common.sh` (centralizado) | `/opt/traefik-portainer` | Directorio de instalación |
 
 ### 3.5 Requisitos de ejecución
 
-- **OS**: Debian 13 (Trixie) — detectado automáticamente en `detect_debian_version()`
+- **OS**: Debian 12 (Bookworm) y Debian 13 (Trixie) están soportados en la ruta Bash; Debian 13 sigue siendo el camino más validado y Ubuntu no está soportado
 - **Usuario**: root (`id -u == 0`) — verificado al inicio de `main.sh`
 - **Conectividad**: acceso a internet (descarga de paquetes y GPG keys de Docker)
 - **DNS**: dominio base configurado y apuntando al servidor antes de instalar Traefik
@@ -207,7 +216,7 @@ bash main.sh
 
 ## 4. Guía del Proyecto Ansible
 
-> El proyecto Ansible está en fase de migración. Ver `ANSIBLE-MIGRATION.md` para la arquitectura completa, plan de fases y comandos de uso.
+> La variante Ansible ya está implementada, soporta **Debian 12 y Debian 13**, y sigue teniendo en **Debian 13** el camino más validado del repo. Ubuntu **no** está soportado. Ver `ANSIBLE-MIGRATION.md` para arquitectura y `PLATFORM-SUPPORT.md` para estado real de soporte.
 
 ### 4.1 Estructura de roles
 
@@ -248,8 +257,7 @@ docker_user: ""
 docker_log_max_size: "10m"
 
 # role: traefik_portainer
-traefik_image: "traefik:v3.3"
-install_dir: /opt/traefik-portainer
+# traefik_image y portainer_image se derivan desde versions.env via lookup plugin
 ```
 
 **Variables sensibles**: siempre con prefijo `vault_` en el archivo vault:
@@ -390,7 +398,6 @@ Tabla completa de todas las variables configurables del proyecto:
 | `SSH_PORT` / `ssh_port` | No | `22` | Puerto SSH del servidor | `secure_server.sh` (read) | `inventory/group_vars/all/vars.yml` |
 | `ADMIN_USER` / `admin_user` | Sí | — | Usuario administrador (sudo + sshusers) | `secure_server.sh` (read) | `vars.yml` |
 | `admin_ssh_public_key` | No (recomendado) | — | Clave pública SSH del admin | No soportado | `vault.yml` |
-| `admin_password_hash` | No | — | Hash shadow de contraseña admin | Generado por adduser | `vault.yml` |
 | `SSH_PASSWORD_AUTH` / `ssh_password_auth` | No | `"no"` | Habilitar auth por contraseña SSH | `secure_server.sh` (read) | `vars.yml` |
 | `DOCKER_USER` / `docker_user` | No | vacío | Usuario añadido al grupo docker | `install_docker.sh` (read) | `vars.yml` |
 | `BASE_DOMAIN` / `base_domain` | Sí (Traefik) | — | Dominio base (ej: example.com) | `install_traefik.sh` (read) | `vars.yml` |
@@ -399,15 +406,18 @@ Tabla completa de todas las variables configurables del proyecto:
 | `LETSENCRYPT_EMAIL` / `letsencrypt_email` | Sí (Traefik) | — | Email para notificaciones Let's Encrypt | `install_traefik.sh` (read) | `vault.yml` |
 | `TRAEFIK_USER` / `traefik_user` | Sí (Traefik) | — | Usuario para basicAuth del dashboard Traefik | `install_traefik.sh` (read) | `vault.yml` |
 | `TRAEFIK_PASSWORD` / `traefik_password` | Sí (Traefik) | — | Contraseña basicAuth Traefik (texto plano, se hashea con htpasswd) | `install_traefik.sh` (read) | `vault.yml` |
-| `INSTALL_DIR` / `install_dir` | No | `/opt/traefik-portainer` | Directorio de instalación del stack | `install_traefik.sh` (hardcoded) | `vars.yml` |
+| `INSTALL_DIR` / `install_dir` | No | `/opt/traefik-portainer` | Directorio de instalación del stack | `common.sh` (centralizado) | `vars.yml` |
 | `LOG_FILE` | No | `/var/log/server-setup.log` | Archivo de log de los scripts | `common.sh` | N/A (Ansible usa su propio log) |
-| `TRAEFIK_IMAGE` / `traefik_image` | No | `traefik:v3.3` (scripts) / `traefik:v3.3` (Ansible) | Imagen Docker de Traefik | Hardcoded en `install_traefik.sh` | `vars.yml` |
-| `PORTAINER_IMAGE` / `portainer_image` | No | `portainer/portainer-ce:latest` (scripts) / `portainer/portainer-ce:2.21.5` (Ansible) | Imagen Docker de Portainer | Hardcoded en `install_traefik.sh` | `vars.yml` |
+| `TRAEFIK_IMAGE` / `traefik_image` | No | Derivada de `TRAEFIK_VERSION` | Imagen Docker de Traefik | Derivada en `modules/common.sh` | Derivada en defaults de `traefik_portainer` y `update` |
+| `PORTAINER_VERSION` | No | `2.39.3` | Versión canónica de Portainer | `modules/versions.env` | `ansible/inventory/group_vars/all/versions.env` |
+| `TRAEFIK_VERSION` | No | `v3.7.4` | Versión canónica de Traefik | `modules/versions.env` | `ansible/inventory/group_vars/all/versions.env` |
+| `PORTAINER_IMAGE` / `portainer_image` | No | Derivada de `PORTAINER_VERSION` | Imagen Docker de Portainer | Derivada en `modules/common.sh` | Derivada en defaults de `traefik_portainer` y `update` |
 | `fail2ban_bantime` | No | `3600` (segundos) | Tiempo de ban en fail2ban | Hardcoded en `secure_server.sh` | `vars.yml` |
 | `fail2ban_maxretry` | No | `3` | Intentos máximos antes de ban (jail SSH) | Hardcoded en `secure_server.sh` | `vars.yml` |
 | `proxy_subnet` | No | `172.18.0.0/16` | Subnet de la red Docker "proxy" | Hardcoded en `install_traefik.sh` | `vars.yml` |
+| `DOCKER_CLEAN_INSTALL` / `docker_clean_install` | No | `false` | Remove /var/lib/docker and /var/lib/containerd on Docker install | Not in Bash | `install.yml` |
 
-**Nota sobre `PORTAINER_IMAGE`**: En los scripts Bash se usa `portainer/portainer-ce:latest`, lo cual no es recomendable. En Ansible se debe usar una versión pinada. Ver sección 6 de `ANSIBLE-MIGRATION.md`.
+**Nota sobre versiones**: Las versiones de Traefik y Portainer se definen en `modules/versions.env` (Bash) y `ansible/inventory/group_vars/all/versions.env` (Ansible). Cada sistema tiene su propio archivo — ambos se actualizan manualmente al cambiar de versión. La opción 4 del menú (update) **no busca nuevas versiones** en Docker Hub, solo verifica si el digest de la imagen pinada cambió (ej: security patch de la misma versión).
 
 ---
 
@@ -439,7 +449,23 @@ Archivo: `.github/workflows/ansible-lint.yml`
 
 Configuración de reglas en `.ansible-lint` en la raíz del repositorio.
 
-### 7.3 Pasar los checks localmente
+### 7.3 Workflow: `molecule.yml`
+
+Archivo: `.github/workflows/molecule.yml`
+
+**Triggers**: push y pull_request en cualquier rama.
+
+**Jobs**:
+1. **molecule** — ejecuta tests Molecule para los 5 roles Ansible (common, security, docker, traefik_portainer, update)
+
+Cada role tiene su propio escenario Molecule bajo `ansible/roles/{role}/molecule/default/`.
+
+**Ejecutar localmente:**
+```bash
+cd ansible/roles/{role} && ANSIBLE_CONFIG=../../ansible.cfg molecule test
+```
+
+### 7.4 Pasar los checks localmente
 
 ```bash
 # === Scripts Bash ===
@@ -745,7 +771,7 @@ Lista priorizada de mejoras futuras:
 
 ### Alta prioridad
 
-1. **[ ] Migración completa a Ansible** — Implementar todos los roles descritos en `ANSIBLE-MIGRATION.md`. Prioridad: role `security` primero (más crítico).
+1. **[ ] Consolidar Ansible como camino principal validado** — La implementación existe y Debian 13 tiene la mejor cobertura actual, pero todavía faltan validaciones operativas, sincerar claims de soporte y cerrar drift documental. Ver `ANSIBLE-MIGRATION.md` y `PLATFORM-SUPPORT.md`.
 
 2. **[ ] Modo no-interactivo para scripts Bash** — Soportar flags de línea de comandos y variables de entorno para eliminar los `read -p`. Permite usar los scripts en cloud-init y CI sin intervención manual.
    ```bash
@@ -753,7 +779,7 @@ Lista priorizada de mejoras futuras:
    SSH_PORT=2222 ADMIN_USER=deploy bash main.sh --non-interactive --step=all
    ```
 
-3. **[x] Pin de versiones de imágenes Docker** — `portainer/portainer-ce:latest` fue reemplazado por `portainer/portainer-ce:2.21.5` en Ansible. Los scripts Bash usan `traefik:v3.3` y `portainer/portainer-ce:latest` (ver nota en sección 6).
+3. **[x] Centralizar versiones de imágenes Docker** — Versiones de Traefik y Portainer en archivos `versions.env` independientes para Bash y Ansible.
 
 4. **[ ] Eliminar IPs estáticas de docker-compose.yml** — Las IPs `172.18.0.2` y `172.18.0.3` no son necesarias. Traefik usa autodiscovery por nombre de contenedor. Simplifica la configuración y evita conflictos.
 
@@ -761,11 +787,11 @@ Lista priorizada de mejoras futuras:
 
 5. **[x] README.md** — Creado con badges de CI, instrucciones de instalación, requisitos, y descripción del proyecto.
 
-6. **[x] CI con Molecule para roles Ansible** — Workflow `ansible-lint.yml` creado y activo. Tests de Molecule pendientes de implementar.
+6. **[x] CI con Molecule para roles Ansible** — Workflow `molecule.yml` creado y activo. Tests Molecule implementados para los 5 roles.
 
 7. **[ ] Script de rollback automatizado** — `modules/rollback.sh` que restaure backups de SSH, fail2ban y Docker de forma automática. Útil si algo sale mal durante la instalación.
 
-8. **[ ] Soporte multi-distribución** — Añadir soporte condicional para Ubuntu 24.04 LTS en los scripts y roles Ansible. Actualmente solo funciona en Debian 13.
+8. **[ ] Validar Debian 12 antes de abrir soporte multi-distribución** — Primero cerrar compatibilidad real entre Debian 12 y Debian 13; recién después evaluar Ubuntu 24.04 LTS. Hoy Ubuntu **no** está soportado.
 
 9. **[ ] Notificaciones de fail2ban por email** — Configurar `mta` y `destemail` en `jail.local` para recibir emails cuando se produzcan bans.
 
@@ -780,3 +806,5 @@ Lista priorizada de mejoras futuras:
 13. **[ ] Tests de integración con GitHub Actions** — Usar una VM Debian 13 real (no contenedor) en GitHub Actions para ejecutar los scripts completos y verificar el resultado final.
 
 14. **[ ] Publicar roles en Ansible Galaxy** — Una vez los roles estén maduros, publicarlos en Galaxy para reutilización en otros proyectos.
+ los roles estén maduros, publicarlos en Galaxy para reutilización en otros proyectos.
+les estén maduros, publicarlos en Galaxy para reutilización en otros proyectos.
