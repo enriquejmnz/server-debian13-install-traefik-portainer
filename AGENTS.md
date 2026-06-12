@@ -128,8 +128,7 @@ error "Error fatal"          # Rojo   [ERROR] — guardado en $LOG_FILE + exit 1
 
 **Manejo de errores:**
 ```bash
-comando_que_puede_fallar
-check_error $? "Descripción del error si falla"
+comando_que_puede_fallar || error "Descripción del error si falla"
 ```
 
 **Variables de configuración** (en `common.sh`):
@@ -682,9 +681,9 @@ Pasos concretos para verificar que funciona.
 **Causa**: Se ejecuta sin privilegios root.  
 **Solución**: `sudo bash main.sh` o cambiar a root con `sudo -i` primero.
 
-### Error 2: `check_error: command not found`
-**Causa**: `modules/common.sh` no fue cargado antes de usar `check_error`.  
-**Solución**: Verificar que `main.sh` está en el directorio raíz del proyecto, no en `modules/`. El path `MODULES_DIR="modules"` es relativo.
+### Error 2: El script falla con errores no manejados
+**Causa**: Un comando falla sin usar `comando || error "msg"`.  
+**Solución**: Verificar que el módulo usa el patrón actual de manejo de errores (`|| error`), no `check_error()` que fue eliminada de `common.sh`.
 
 ### Error 3: ShellCheck falla con SC1090 o SC2154 en CI
 **Causa**: Variables o sources definidos en otros archivos que ShellCheck no puede seguir.  

@@ -17,6 +17,9 @@ else
   NC=''
 fi
 
+# Versión del instalador (semver)
+SCRIPT_VERSION="1.0.0"
+
 # Configuración compartida del proyecto — independiente de Ansible
 COMMON_DIR=$(cd -- "$(dirname "${BASH_SOURCE[0]}")" && pwd)
 PROJECT_ROOT=$(dirname "$COMMON_DIR")
@@ -155,15 +158,6 @@ require_supported_debian() {
 
   if [[ $DISTRO_ID != "debian" ]] || ! is_supported_debian_version "$DEBIAN_VERSION"; then
     unsupported_bash_platform "${DISTRO_NAME:-$DISTRO_ID}"
-  fi
-}
-
-# Función para manejo de errores
-check_error() {
-  local exit_code=$1
-  local message=$2
-  if [[ $exit_code -ne 0 ]]; then
-    error "$message"
   fi
 }
 

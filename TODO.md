@@ -30,15 +30,13 @@ El proyecto combina scripts Bash y una variante Ansible para configurar un servi
 - `.gitignore` creado
 
 **Pendiente:**
-- 🔴 Permisos restrictivos en `$INSTALL_DIR` y configs generados
-- 🟡 `-r` en todos los `read -p`
-- 🟡 Reemplazar `check_error $?` por `comando || error "msg"`
-- 🟡 `SCRIPT_VERSION` en `common.sh`
+- ✅ Permisos restrictivos en `$INSTALL_DIR` y configs generados
+- ✅ SCRIPT_VERSION en `common.sh`
+- ✅ check_error() eliminada (código muerto)
 - 🟡 Validación DNS de subdominios antes de Let's Encrypt
 - 🟡 Flags CLI básicos (`--help`)
 - 🟡 Soporte `.env` para preconfiguración no interactiva
 - 🟡 Evaluar docker-socket-proxy como alternativa
-- 🟢 Pinear Traefik a minor explícita
 - 🟢 CI test de integración básico
 - 🟢 Indentación inconsistente en `secure_server.sh`
 - 🟡 Ansible: validación operativa en VM real
@@ -99,13 +97,13 @@ Eliminado del heredoc.
 `common.sh` y `main.sh` mejorados significativamente. Revisar `secure_server.sh` línea `ufw allow $ssh_port/tcp` y similares.
 
 ### ✅ QC-02 — `check_error $?` antipatrón
-Sigue presente en varios módulos. Pendiente de refactorizar.
+`check_error()` eliminada de `common.sh` (código muerto — nunca se llamaba).
 
 ### ✅ QC-03 — `set -o pipefail` y `set -u`
 ✅ `set -o pipefail` en `main.sh`. ✅ `set -euo pipefail` en `common.sh`.
 
-### QC-04 — `read` sin `-r`
-Pendiente. Varios `read -p` sin `-r` en `secure_server.sh`, `install_traefik.sh`.
+### ✅ QC-04 — `read` sin `-r`
+Resuelto de hecho — todos los `read -p` ya incluían `-r`.
 
 ### QC-05 — `echo -e` no portable
 Pendiente. `main.sh` y `update_traefik.sh` usan `echo -e`.
@@ -120,8 +118,8 @@ Pendiente. Bloque `if DEBIAN_VERSION` en `secure_server.sh`.
 ### ✅ SEC-01 — Contraseña visible en proceso (resuelto)
 `unset traefik_password` inmediatamente tras generar el hash.
 
-### 🔴 SEC-02 — Permisos en dynamic.yml (pendiente)
-No se aplican permisos restrictivos en `$INSTALL_DIR` ni `dynamic.yml`.
+### ✅ SEC-02 — Permisos en dynamic.yml (resuelto)
+Se aplican permisos restrictivos en `$INSTALL_DIR` (750), `docker-compose.yml` (640), `traefik.yml` (640), `dynamic.yml` (600). Y `unset traefik_auth` tras generar el archivo.
 
 ### SEC-03 — docker.sock (documentado)
 Riesgo conocido. Evaluar socket proxy como mejora futura.
@@ -173,8 +171,8 @@ vía `versions.env`.
 ### ✅ MAN-03 — .gitignore (resuelto)
 Creado con exclusiones para `.env`, `acme.json`, `*.bak`, vault, etc.
 
-### MAN-04 — SCRIPT_VERSION
-Pendiente. No hay versión del script.
+### ✅ MAN-04 — SCRIPT_VERSION
+`SCRIPT_VERSION="1.0.0"` añadido en `common.sh`.
 
 ### ✅ MAN-05 — ai_studio_code (resuelto)
 Eliminado.
@@ -224,11 +222,11 @@ No hay Dockerfiles propios.
 | 12 | `sshd_config` temp + validación sshd -t | 🔴 | M | ✅ |
 | 13 | `AllowAgentForwarding no`, `AllowTcpForwarding no` | 🔴 | S | ✅ |
 | 14 | `unset traefik_password` | 🔴 | S | ✅ |
-| **15** | **Permisos restrictivos en $INSTALL_DIR y configs** | **🔴** | **S** | **❌ Pendiente** |
-| 16 | `-r` en todos los `read -p` | 🟡 | S | ❌ Pendiente |
+| **15** | **Permisos restrictivos en $INSTALL_DIR y configs** | **🔴** | **S** | **✅** |
+| 16 | `-r` en todos los `read -p` | 🟡 | S | ✅ (ya estaba) |
 | 17 | Centralizar `INSTALL_DIR` en `common.sh` | 🟡 | S | ✅ |
-| 18 | Reemplazar `check_error $?` por `comando \|\| error` | 🟡 | M | ❌ Pendiente |
-| 19 | `SCRIPT_VERSION` en `common.sh` | 🟡 | S | ❌ Pendiente |
+| 18 | Reemplazar `check_error $?` por `comando \|\| error` | 🟡 | M | ✅ (eliminada función muerta) |
+| 19 | `SCRIPT_VERSION` en `common.sh` | 🟡 | S | ✅ |
 | 20 | Sincronizar docs cuando cambie soporte | 🟡 | S | ✅ |
 | 21 | Crear `.gitignore` | 🟡 | S | ✅ |
 | 22 | `destemail` de fail2ban configurable | 🟡 | S | ✅ |
