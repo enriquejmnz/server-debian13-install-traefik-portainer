@@ -141,7 +141,7 @@ show_menu() {
   printf '%s\n' "1. Asegurar el servidor"
   printf '%s\n' "2. Instalar Docker y Docker Compose"
   printf '%s\n' "3. Instalar Traefik y Portainer"
-  printf '%s\n' "4. Verificar y actualizar Traefik y Portainer"
+  printf '%s\n' "4. Buscar parches de seguridad para Traefik y Portainer"
   printf '%s\n' "5. Ejecutar todos los procesos secuencialmente (1-3)"
   printf '%s\n' "6. Salir"
   printf '%s' "${YELLOW}Seleccione una opción (1-6):${NC} "

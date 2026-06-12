@@ -40,10 +40,10 @@ Analizar estas notas para generar propuestas de mejora, identificar riesgos pote
   - Agregar una opción de test para verificar que los servicios instalados funcionen correctamente y ofrecer un resumen del estado del sistema.
 - [ ] **Seguridad: Grupo Docker**
   - Evaluar si, por seguridad, el usuario administrador no debe ser parte del grupo `docker`.
-- [ ] **Gestión de versiones (Traefik y Portainer)**
-  - Especificar en el script que las actualizaciones deben ser manuales.
-  - Indicar claramente dónde realizar este cambio.
-  - Analizar la posibilidad de parametrizar las versiones desde el script para evitar edición manual de archivos.
+- [x] **Gestión de versiones (Traefik y Portainer)**
+  - ✅ Las actualizaciones son manuales: editar `modules/versions.env` para cambiar de versión
+  - ✅ `common.sh` lee `versions.env` y deriva `TRAEFIK_IMAGE`/`PORTAINER_IMAGE`
+  - ✅ La opción update solo compara digests de la versión pinada (parches de seguridad), no busca versiones nuevas
 - [ ] **Backup y Migración**
   - Agregar una sección de *backup* para Traefik y Portainer.
   - Facilitar la migración entre VPS de manera automática y reducir la carga operativa para el administrador.
