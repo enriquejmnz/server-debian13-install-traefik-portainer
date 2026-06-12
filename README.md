@@ -62,11 +62,16 @@ Todo lo anterior en servidores Debian objetivo, más:
 git clone https://github.com/tu-usuario/server-debian13-install-traefik-portainer.git
 cd server-debian13-install-traefik-portainer
 
-# Ejecutar como root:
+# Ejecutar como root (interactivo):
 sudo bash main.sh
+
+# O modo no interactivo con archivo .env:
+sudo bash main.sh --non-interactive --step all
 ```
 
 Si ejecutás `main.sh` sobre Ubuntu u otra distro no soportada, el instalador corta al inicio con un error claro antes de tocar paquetes o servicios.
+
+### Modo interactivo
 
 El menú interactivo ofrece las siguientes opciones:
 
@@ -77,6 +82,22 @@ El menú interactivo ofrece las siguientes opciones:
 4. Actualizar contenedores   — Pull + recrear + prune
 5. Instalación completa      — Opciones 1+2+3 en secuencia
 6. Salir
+```
+
+### Modo no interactivo (CLI)
+
+```bash
+sudo bash main.sh --help                                     # Ver opciones
+sudo bash main.sh --non-interactive --step secure            # Solo hardening
+sudo bash main.sh --non-interactive --step docker            # Solo Docker
+sudo bash main.sh --non-interactive --step traefik           # Solo Traefik+Portainer
+sudo bash main.sh --non-interactive --step all               # Todo
+sudo bash main.sh --non-interactive --step all --env-file .env  # Con .env personalizado
+```
+
+Copiar [`example.env`](example.env) a `.env` y ajustar las variables requeridas.
+
+**Validación DNS**: antes de instalar Traefik, el script verifica que los subdominios resuelvan a la IP del servidor. En modo interactivo permite continuar si DNS aún se está propagando; en `--non-interactive` bloquea si falla.
 ```
 
 ---

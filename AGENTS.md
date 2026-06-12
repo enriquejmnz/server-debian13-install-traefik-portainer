@@ -180,22 +180,53 @@ nuevo_modulo_function() {
 
 ### 3.4 Variables configurables
 
-Los scripts obtienen su configuración mediante `read -p` (interactivo). No hay archivo `.env`. Variables importantes:
+Los scripts obtienen su configuración mediante `read -p` (interactivo) o desde un archivo `.env` (no interactivo). Ver [`example.env`](example.env) para el formato exacto.
 
-| Variable | Dónde se define | Valor por defecto | Descripción |
-|---|---|---|---|
-| `LOG_FILE` | `common.sh` | `/var/log/server-setup.log` | Archivo de log centralizado |
-| `ssh_port` | `secure_server.sh` (read) | `22` | Puerto SSH |
-| `disable_password` | `secure_server.sh` (read) | `s` (sí) | Deshabilitar auth por contraseña |
-| `admin_user` | `secure_server.sh` (read) | — (requerido) | Usuario administrador |
-| `docker_user` | `install_docker.sh` (read) | vacío (omitir) | Usuario para grupo docker |
-| `base_domain` | `install_traefik.sh` (read) | — (requerido) | Dominio base |
-| `traefik_subdomain` | `install_traefik.sh` (read) | `traefik` | Subdominio Traefik |
-| `portainer_subdomain` | `install_traefik.sh` (read) | `portainer` | Subdominio Portainer |
-| `email_admin` | `install_traefik.sh` (read) | — (requerido) | Email Let's Encrypt |
-| `traefik_user` | `install_traefik.sh` (read) | — (requerido) | Usuario basicAuth Traefik |
-| `traefik_password` | `install_traefik.sh` (read) | — (requerido) | Contraseña basicAuth Traefik |
-| `INSTALL_DIR` | `common.sh` (centralizado) | `/opt/traefik-portainer` | Directorio de instalación |
+Variables importantes:
+
+| Variable | Dónde se define | Valor por defecto | Descripción | Env var para .env |
+|---|---|---|---|---|
+| `LOG_FILE` | `common.sh` | `/var/log/server-setup.log` | Archivo de log centralizado | — |
+| `SCRIPT_VERSION` | `common.sh` | `1.0.0` | Versión del script | — |
+| `INSTALL_DIR` | `common.sh` (centralizado) | `/opt/traefik-portainer` | Directorio de instalación | — |
+| `ssh_port` | `secure_server.sh` | `22` | Puerto SSH | `SSH_PORT` |
+| `disable_password` | `secure_server.sh` | `s` (sí) | Deshabilitar auth por contraseña | `DISABLE_PASSWORD_AUTH` |
+| `admin_user` | `secure_server.sh` | — (requerido) | Usuario administrador | `ADMIN_USER` |
+| `admin_ssh_key` | `secure_server.sh` | vacío | Clave pública SSH del admin | `ADMIN_SSH_KEY` |
+| `docker_user` | `install_docker.sh` | vacío (omitir) | Usuario para grupo docker | `DOCKER_USER` |
+| `base_domain` | `install_traefik.sh` | — (requerido) | Dominio base | `BASE_DOMAIN` |
+| `traefik_subdomain` | `install_traefik.sh` | `traefik` | Subdominio Traefik | `TRAEFIK_SUBDOMAIN` |
+| `portainer_subdomain` | `install_traefik.sh` | `portainer` | Subdominio Portainer | `PORTAINER_SUBDOMAIN` |
+| `email_admin` | `install_traefik.sh` | — (requerido) | Email Let's Encrypt | `EMAIL_ADMIN` |
+| `traefik_user` | `install_traefik.sh` | — (requerido) | Usuario basicAuth Traefik | `TRAEFIK_USER` |
+| `traefik_password` | `install_traefik.sh` | — (requerido) | Contraseña basicAuth Traefik | `TRAEFIK_PASSWORD` |
+| `timezone` | `secure_server.sh` | `UTC` | Zona horaria del servidor | `TIMEZONE` |
+
+### 3.6 Modo no interactivo y CLI
+
+El script soporta flags de línea de comandos para ejecución sin intervención manual:
+
+```bash
+# Ayuda
+sudo bash main.sh --help
+
+# Ejecución completa con variables de entorno
+sudo bash main.sh --non-interactive --step all
+
+# Solo un paso específico
+sudo bash main.sh --non-interactive --step secure
+
+# Con archivo .env personalizado
+sudo bash main.sh --non-interactive --step all --env-file /ruta/.env
+```
+
+Pasos disponibles: `secure`, `docker`, `traefik`, `update`, `all`.
+
+En modo `--non-interactive`, si falta una variable requerida el script falla con un mensaje claro. Ver [`example.env`](example.env) para la lista completa de variables.
+
+### 3.7 Validación DNS
+
+Antes de instalar Traefik, el script verifica que los subdominios configurados resuelvan a la IP pública del servidor. En modo interactivo permite continuar si DNS aún está propagando; en `--non-interactive` falla si la validación no pasa.
 
 ### 3.5 Requisitos de ejecución
 
@@ -492,11 +523,13 @@ ansible-playbook ansible/playbooks/site.yml --syntax-check
 
 | Acción | Comando (scripts Bash) | Comando (Ansible) |
 |---|---|---|
-| Instalación completa | `sudo bash main.sh` → opción 5 | `ansible-playbook ansible/playbooks/site.yml --ask-vault-pass` |
+| Instalación completa no interactiva | `sudo bash main.sh --non-interactive --step all` | `ansible-playbook ansible/playbooks/site.yml --ask-vault-pass` |
 | Solo hardening | `sudo bash main.sh` → opción 1 | `ansible-playbook ansible/playbooks/hardening.yml --ask-vault-pass` |
 | Solo Docker | `sudo bash main.sh` → opción 2 | `ansible-playbook ansible/playbooks/docker.yml` |
 | Solo Traefik + Portainer | `sudo bash main.sh` → opción 3 | `ansible-playbook ansible/playbooks/traefik_portainer.yml --ask-vault-pass` |
 | Actualizar contenedores | `sudo bash main.sh` → opción 4 | `ansible-playbook ansible/playbooks/update.yml` |
+| Solo hardening (CLI) | `sudo bash main.sh --non-interactive --step secure --env-file .env` | — |
+| Ver ayuda | `sudo bash main.sh --help` | — |
 | Dry-run (ver cambios) | No disponible | `ansible-playbook ... --check --diff` |
 | Solo SSH config | No disponible directamente | `ansible-playbook ... --tags ssh --check --diff` |
 | Solo UFW | No disponible directamente | `ansible-playbook ... --tags ufw` |
@@ -772,9 +805,9 @@ Lista priorizada de mejoras futuras:
 
 1. **[ ] Consolidar Ansible como camino principal validado** — La implementación existe y Debian 13 tiene la mejor cobertura actual, pero todavía faltan validaciones operativas, sincerar claims de soporte y cerrar drift documental. Ver `ANSIBLE-MIGRATION.md` y `PLATFORM-SUPPORT.md`.
 
-2. **[ ] Modo no-interactivo para scripts Bash** — Soportar flags de línea de comandos y variables de entorno para eliminar los `read -p`. Permite usar los scripts en cloud-init y CI sin intervención manual.
+2. **[x] Modo no-interactivo para scripts Bash** — Soportar flags de línea de comandos y variables de entorno para eliminar los `read -p`. Permite usar los scripts en cloud-init y CI sin intervención manual.
    ```bash
-   # Ejemplo objetivo:
+   # Ejemplo:
    SSH_PORT=2222 ADMIN_USER=deploy bash main.sh --non-interactive --step=all
    ```
 
