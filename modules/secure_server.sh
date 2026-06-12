@@ -233,13 +233,13 @@ secure_server() {
   # FASE 2 — Configuración SSH (puerto y política de contraseñas)
   # =====================================================================
   log "Paso 1/4 — Configuración de SSH..."
-  prompt_or_default "SSH_PORT" "Ingrese el puerto SSH" "22"
+  prompt_or_default "SSH_PORT" "Ingrese el puerto SSH (Enter para usar 22, o especifique un puerto no estándar)" "22"
   ssh_port="${SSH_PORT:-22}"
   if ! [[ $ssh_port =~ ^[0-9]+$ ]] || [[ $ssh_port -lt 1 ]] || [[ $ssh_port -gt 65535 ]]; then
     error "Puerto SSH inválido: $ssh_port"
   fi
 
-  prompt_or_default "DISABLE_PASSWORD_AUTH" "¿Desea deshabilitar la autenticación por contraseña para SSH? (s/n)" "s"
+  prompt_or_default "DISABLE_PASSWORD_AUTH" "¿Desea deshabilitar la autenticación por contraseña para SSH? (s/n, predeterminado: s)" "s"
   disable_password="${DISABLE_PASSWORD_AUTH:-s}"
   if [[ $disable_password =~ ^[sS]$ ]]; then
     password_auth="no"

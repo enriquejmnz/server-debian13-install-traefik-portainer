@@ -47,9 +47,9 @@ install_traefik_portainer() {
   prompt_or_default "BASE_DOMAIN" "Ingrese el dominio base (ejemplo: example.com)"
   base_domain="${BASE_DOMAIN}"
   validate_domain "$base_domain"
-  prompt_or_default "TRAEFIK_SUBDOMAIN" "Ingrese el subdominio para Traefik" "traefik"
+  prompt_or_default "TRAEFIK_SUBDOMAIN" "Ingrese el subdominio para Traefik (def: traefik)" "traefik"
   traefik_subdomain="${TRAEFIK_SUBDOMAIN:-traefik}"
-  prompt_or_default "PORTAINER_SUBDOMAIN" "Ingrese el subdominio para Portainer" "portainer"
+  prompt_or_default "PORTAINER_SUBDOMAIN" "Ingrese el subdominio para Portainer (def: portainer)" "portainer"
   portainer_subdomain="${PORTAINER_SUBDOMAIN:-portainer}"
 
   # Bucle de validación para el correo electrónico

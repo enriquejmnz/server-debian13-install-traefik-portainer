@@ -201,14 +201,16 @@ dns_validate_subdomain() {
 }
 
 # Preguntar o confirmar una variable, con soporte .env
-# Uso: prompt_or_default "VAR_NAME" "Descripción" "default_value" [--sensitive]
+# Uso: prompt_or_default "VAR_NAME" "Descripción" ["default_value"] [--sensitive]
 # Si VAR_NAME ya está definida, la salta. Si NON_INTERACTIVE y no definida, error.
+# La descripción debe incluir todo el contexto informativo (valores válidos, defaults, etc.)
 prompt_or_default() {
   local var_name="$1"
   local description="$2"
-  local default_value="$3"
+  local default_value="${3:-}"
   local sensitive=false
   local user_input
+  local prompt_text
 
   if [[ ${4:-} == "--sensitive" ]]; then
     sensitive=true
