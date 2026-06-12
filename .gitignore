@@ -18,6 +18,7 @@ acme.json
 # Artefactos locales de Ansible
 ansible/*.retry
 ansible/retry_files/
+.vault_pass
 ansible/.vault_pass
 ansible/.vault_pass.txt
 ansible/ansible.log
@@ -37,6 +38,10 @@ venv/
 Thumbs.db
 .idea/
 .vscode/
+.atl/
 
 # Archivos generados localmente fuera del repo
 opt/
+
+# CommandCode agent metadata
+.commandcode/

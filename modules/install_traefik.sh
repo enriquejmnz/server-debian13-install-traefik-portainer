@@ -9,6 +9,7 @@ cleanup_traefik_portainer() {
 
 # Función para instalar Traefik y Portainer
 install_traefik_portainer() {
+  require_supported_debian
   log "Iniciando instalación de Traefik y Portainer..."
   if ! command -v docker &>/dev/null; then
     error "Docker no está instalado. Ejecute primero la instalación de Docker."

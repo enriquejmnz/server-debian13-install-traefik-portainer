@@ -1,6 +1,6 @@
 #!/bin/bash
 # modules/install_docker.sh - Módulo para instalar Docker y Docker Compose
-# Corregido para Debian 13 (Trixie) eliminando dependencias obsoletas.
+# Compatible con Debian 12 (Bookworm) y Debian 13 (Trixie).
 
 configure_docker_user() {
   log "Configurando usuario para Docker..."
@@ -25,6 +25,9 @@ configure_docker_user() {
 
 # Función para instalar Docker
 install_docker() {
+  local docker_repo_url docker_keyring docker_architecture
+
+  require_supported_debian
   log "Iniciando instalación de Docker..."
 
   log "Eliminando instalaciones previas de Docker..."
@@ -33,15 +36,18 @@ install_docker() {
 
   log "Actualizando el sistema e instalando dependencias..."
   apt-get update || error "Error al actualizar índices de paquetes"
-  # Se eliminan 'software-properties-common' y 'apt-transport-https' por ser innecesarios/obsoletos en Debian 13.
-  apt-get install -y ca-certificates curl gnupg lsb-release || error "Error al instalar dependencias"
+  apt-get install -y ca-certificates curl gnupg || error "Error al instalar dependencias"
 
-  log "Configurando repositorio oficial de Docker..."
+  docker_repo_url="https://download.docker.com/linux/debian"
+  docker_keyring="/etc/apt/keyrings/docker.gpg"
+  docker_architecture=$(dpkg --print-architecture)
+
+  log "Configurando repositorio oficial de Docker para Debian $DEBIAN_VERSION ($DEBIAN_CODENAME)..."
   install -m 0755 -d /etc/apt/keyrings || error "Error al crear directorio /etc/apt/keyrings"
-  curl -fsSL https://download.docker.com/linux/debian/gpg | gpg --dearmor -o /etc/apt/keyrings/docker.gpg || error "Error al descargar la clave GPG de Docker"
-  chmod a+r /etc/apt/keyrings/docker.gpg || error "Error al configurar permisos de la clave GPG"
+  curl -fsSL "$docker_repo_url/gpg" | gpg --dearmor --yes -o "$docker_keyring" || error "Error al descargar la clave GPG de Docker"
+  chmod a+r "$docker_keyring" || error "Error al configurar permisos de la clave GPG"
   cat >/etc/apt/sources.list.d/docker.list <<EOF
-deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.gpg] https://download.docker.com/linux/debian $(lsb_release -cs) stable
+deb [arch=$docker_architecture signed-by=$docker_keyring] $docker_repo_url $DEBIAN_CODENAME stable
 EOF
 
   log "Actualizando índice de paquetes..."
@@ -50,8 +56,13 @@ EOF
   log "Instalando Docker Engine y Docker Compose..."
   apt-get install -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin || error "Error al instalar Docker"
 
-  if ! command -v docker &>/dev/null; then error "Docker no se instaló correctamente"; fi
-  if ! docker compose version &>/dev/null; then error "Docker Compose no se instaló correctamente"; fi
+  if ! command -v docker &>/dev/null; then
+    error "Docker no se instaló correctamente"
+  fi
+
+  if ! docker compose version &>/dev/null; then
+    error "Docker Compose no se instaló correctamente"
+  fi
 
   log "Configurando Docker para que inicie automáticamente..."
   systemctl enable docker.service || error "Error al habilitar Docker"
@@ -72,7 +83,6 @@ EOF
   "no-new-privileges": true,
   "live-restore": true,
   "userland-proxy": false,
-  "experimental": false,
   "ip6tables": true,
   "iptables": true
 }
@@ -90,7 +100,7 @@ EOF
   chmod 755 /opt/docker-compose || error "Error al configurar permisos de /opt/docker-compose"
 
   log "Instalación de Docker completada con éxito"
-  if [ -n "$docker_user" ]; then
+  if [[ -n $docker_user ]]; then
     log "  - Usuario configurado para administrar Docker: $docker_user"
     log "NOTA: Para que los cambios en los permisos del grupo tengan efecto, el usuario debe cerrar sesión e iniciarla nuevamente"
   fi

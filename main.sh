@@ -1,7 +1,7 @@
 #!/bin/bash
 #
-# main.sh - Script principal para configurar y asegurar un servidor Debian 13
-# Autor: Claude, con asistencia de Grok - Actualizado para Debian 13 (Trixie)
+# main.sh - Script principal para configurar y asegurar un servidor Debian 12/13
+# Autor: Claude, con asistencia de Grok - Actualizado para Debian 12/13
 # Fecha: 2025-09-02
 #
 # Este script modularizado llama a funciones específicas desde el directorio /modules.
@@ -13,7 +13,7 @@ set -o pipefail
 MODULES_DIR="modules"
 
 # Cargar funciones comunes
-if [ -f "$MODULES_DIR/common.sh" ]; then
+if [[ -f "$MODULES_DIR/common.sh" ]]; then
   source "$MODULES_DIR/common.sh"
 else
   echo "[ERROR] El archivo de funciones comunes '$MODULES_DIR/common.sh' no se encuentra."
@@ -22,7 +22,7 @@ fi
 
 # Cargar todos los módulos de funciones
 for module in "$MODULES_DIR"/*.sh; do
-  if [ -f "$module" ] && [[ $module != *"/common.sh" ]]; then
+  if [[ -f $module && $module != *"/common.sh" ]]; then
     source "$module"
   fi
 done
@@ -60,17 +60,17 @@ initialize_log_file
 exec > >(tee -a "$LOG_FILE") 2>&1
 
 # Verificar si se ejecuta como root
-if [ "$(id -u)" -ne 0 ]; then
+if [[ $(id -u) -ne 0 ]]; then
   error "Este script debe ejecutarse como root"
 fi
 
-# Detectar versión de Debian al inicio
+# Detectar plataforma soportada al inicio
 detect_debian_version
 
 # Menú interactivo
 show_menu() {
   clear
-  echo -e "${GREEN}=== Configuración de Servidor Debian 13 (Trixie) ===${NC}"
+  echo -e "${GREEN}=== Configuración de Servidor Debian 12 / 13 ===${NC}"
   echo "1. Asegurar el servidor"
   echo "2. Instalar Docker y Docker Compose"
   echo "3. Instalar Traefik y Portainer"
