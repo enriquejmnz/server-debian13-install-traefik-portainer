@@ -80,7 +80,7 @@ Opciones:
   --help, -h              Muestra esta ayuda
   --non-interactive       Modo no interactivo (requiere .env)
   --step PASO             Ejecuta un paso específico y sale
-                          Valores: secure, docker, traefik, update, verify, all
+                          Valores: secure, docker, traefik, update, verify, backup, restore, all
   --env-file ARCHIVO      Ruta al archivo .env (defecto: ./.env)
 EOF
 }
@@ -124,12 +124,14 @@ if [[ -n $STEP ]]; then
   traefik) install_traefik_portainer ;;
   update) update_traefik_portainer ;;
   verify) verify_services ;;
+  backup) backup_stack ;;
+  restore) restore_stack ;;
   all)
     secure_server
     install_docker
     install_traefik_portainer
     ;;
-  *) error "Paso desconocido: $STEP. Valores: secure, docker, traefik, update, verify, all" ;;
+  *) error "Paso desconocido: $STEP. Valores: secure, docker, traefik, update, verify, backup, restore, all" ;;
   esac
   exit 0
 fi
@@ -159,9 +161,12 @@ show_menu() {
   printf '%s\n' "  ${GREEN}6${NC}) Verificar estado del sistema"
   printf '%s\n' "       SSH · UFW · Docker · Traefik · recursos"
   echo ""
-  printf '%s\n' "  ${GREEN}7${NC}) Salir"
+  printf '%s\n' "  ${GREEN}7${NC}) Backup y Migración del stack"
+  printf '%s\n' "       Exportar o importar Traefik + Portainer"
   echo ""
-  printf '%s' "${YELLOW}  Seleccione una opción (1-7):${NC} "
+  printf '%s\n' "  ${GREEN}8${NC}) Salir"
+  echo ""
+  printf '%s' "${YELLOW}  Seleccione una opción (1-8):${NC} "
 }
 
 # Procesar la selección del menú
@@ -202,6 +207,9 @@ process_choice() {
     read -r
     ;;
   7)
+    backup_restore_menu
+    ;;
+  8)
     log "Saliendo..."
     exit 0
     ;;
