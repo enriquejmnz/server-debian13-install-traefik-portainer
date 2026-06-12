@@ -36,9 +36,12 @@ El proyecto combina scripts Bash y una variante Ansible para configurar un servi
 - ✅ Validación DNS de subdominios antes de Let's Encrypt
 - ✅ Flags CLI básicos (`--help`, `--non-interactive`, `--step`, `--env-file`)
 - ✅ Soporte `.env` para preconfiguración no interactiva
+- ✅ echo-e reemplazado por printf en todo el proyecto
+- ✅ Variables sin comillas verificadas (sin SC2086)
+- ✅ Indentación consistente (shfmt clean)
+- ✅ Confirmación de contraseña Traefik (segundo ingreso)
 - 🟡 Evaluar docker-socket-proxy como alternativa
 - 🟢 CI test de integración básico
-- 🟢 Indentación inconsistente en `secure_server.sh`
 - 🟡 Ansible: validación operativa en VM real
 
 ---
@@ -93,8 +96,8 @@ Eliminado del heredoc.
 
 ## 3. Mejoras de calidad de código
 
-### QC-01 — Variables sin comillas (parcial)
-`common.sh` y `main.sh` mejorados significativamente. Revisar `secure_server.sh` línea `ufw allow $ssh_port/tcp` y similares.
+### ✅ QC-01 — Variables sin comillas
+`common.sh` y `main.sh` mejorados. `ufw allow "$ssh_port/tcp"` ya tiene comillas. Sin issues SC2086 en ShellCheck.
 
 ### ✅ QC-02 — `check_error $?` antipatrón
 `check_error()` eliminada de `common.sh` (código muerto — nunca se llamaba).
@@ -105,11 +108,11 @@ Eliminado del heredoc.
 ### ✅ QC-04 — `read` sin `-r`
 Resuelto de hecho — todos los `read -p` ya incluían `-r`.
 
-### QC-05 — `echo -e` no portable
-Pendiente. `main.sh` y `update_traefik.sh` usan `echo -e`.
+### ✅ QC-05 — `echo -e` no portable
+Reemplazado por `printf` en todo el proyecto. Colores definidos con `$'...'` en `common.sh`.
 
-### QC-06 — Indentación inconsistente
-Pendiente. Bloque `if DEBIAN_VERSION` en `secure_server.sh`.
+### ✅ QC-06 — Indentación inconsistente
+Resuelto de hecho — `shfmt` no reporta diferencias en `secure_server.sh`.
 
 ---
 

@@ -136,14 +136,15 @@ fi
 # Menú interactivo
 show_menu() {
   clear
-  echo -e "${GREEN}=== Configuración de Servidor Debian 12 / 13 ===${NC}"
-  echo "1. Asegurar el servidor"
-  echo "2. Instalar Docker y Docker Compose"
-  echo "3. Instalar Traefik y Portainer"
-  echo "4. Verificar y actualizar Traefik y Portainer"
-  echo "5. Ejecutar todos los procesos secuencialmente (1-3)"
-  echo "6. Salir"
-  echo -e "${YELLOW}Seleccione una opción (1-6):${NC} "
+  clear
+  printf '%s\n' "${GREEN}=== Configuración de Servidor Debian 12 / 13 ===${NC}"
+  printf '%s\n' "1. Asegurar el servidor"
+  printf '%s\n' "2. Instalar Docker y Docker Compose"
+  printf '%s\n' "3. Instalar Traefik y Portainer"
+  printf '%s\n' "4. Verificar y actualizar Traefik y Portainer"
+  printf '%s\n' "5. Ejecutar todos los procesos secuencialmente (1-3)"
+  printf '%s\n' "6. Salir"
+  printf '%s' "${YELLOW}Seleccione una opción (1-6):${NC} "
 }
 
 # Procesar la selección del menú

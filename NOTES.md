@@ -48,7 +48,7 @@ Analizar estas notas para generar propuestas de mejora, identificar riesgos pote
   - Agregar una sección de *backup* para Traefik y Portainer.
   - Facilitar la migración entre VPS de manera automática y reducir la carga operativa para el administrador.
 
-- [ ] **Confirmar contraseña de usuario traefik**
+- [x] **Confirmar contraseña de usuario traefik**
 
-        La contraseña del usuario traefik no se comprueba si esta correcta con una segundo ingreso. Implementar este feature.
+        Implementado en modules/install_traefik.sh: bucle while true con segundo ingreso y comparación.
 

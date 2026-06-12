@@ -39,13 +39,13 @@ secure_server_create_admin_user() {
   done
 
   echo ""
-  echo -e "${YELLOW}==========================================${NC}"
-  echo -e "${YELLOW}  CONFIGURACIÓN DE ACCESO SSH${NC}"
-  echo -e "${YELLOW}==========================================${NC}"
+  printf '%s\n' "${YELLOW}==========================================${NC}"
+  printf '%s\n' "${YELLOW}  CONFIGURACIÓN DE ACCESO SSH${NC}"
+  printf '%s\n' "${YELLOW}==========================================${NC}"
   echo ""
-  echo -e "  Método 1 — Pegar clave pública ahora:"
-  echo -e "    Si ya tenés tu clave pública, pegala a continuación."
-  echo -e "    (Generala con: ${GREEN}ssh-keygen -t ed25519${NC})"
+  printf '%s\n' "  Método 1 — Pegar clave pública ahora:"
+  printf '%s\n' "    Si ya tenés tu clave pública, pegala a continuación."
+  printf '%s\n' "    (Generala con: ${GREEN}ssh-keygen -t ed25519${NC})"
   echo ""
 
   prompt_or_default "ADMIN_SSH_KEY" "  Pegá tu clave pública SSH (dejar vacío para omitir)"
@@ -63,10 +63,10 @@ secure_server_create_admin_user() {
     log "Clave SSH configurada para $admin_user"
   else
     echo ""
-    echo -e "  Método 2 — Usar ssh-copy-id desde tu máquina local:"
-    echo -e "  ${GREEN}ssh-copy-id -p $ssh_port $admin_user@$(hostname -I | awk '{print $1}')${NC}"
-    echo -e "  O con una clave específica:"
-    echo -e "  ${GREEN}ssh-copy-id -i ~/.ssh/tu_clave.pub -p $ssh_port $admin_user@$(hostname -I | awk '{print $1}')${NC}"
+    printf '%s\n' "  Método 2 — Usar ssh-copy-id desde tu máquina local:"
+    printf '%s\n' "  ${GREEN}ssh-copy-id -p $ssh_port $admin_user@$(hostname -I | awk '{print $1}')${NC}"
+    printf '%s\n' "  O con una clave específica:"
+    printf '%s\n' "  ${GREEN}ssh-copy-id -i ~/.ssh/tu_clave.pub -p $ssh_port $admin_user@$(hostname -I | awk '{print $1}')${NC}"
     echo ""
     read -r -p "  Presioná Enter cuando hayas copiado la clave (o escribí 'skip' para omitir): " ssh_key_confirm
 
@@ -327,10 +327,10 @@ EOF
   else
     while true; do
       echo ""
-      echo -e "  Zonas horarias disponibles (ejemplos):"
-      echo -e "    ${GREEN}timedatectl list-timezones${NC} — muestra todas las zonas"
-      echo -e "    America/Argentina/Buenos_Aires  America/Mexico_City  America/Santiago"
-      echo -e "    Europe/Madrid  Europe/London  Asia/Tokyo  UTC"
+      printf '%s\n' "  Zonas horarias disponibles (ejemplos):"
+      printf '%s\n' "    ${GREEN}timedatectl list-timezones${NC} — muestra todas las zonas"
+      printf '%s\n' "    America/Argentina/Buenos_Aires  America/Mexico_City  America/Santiago"
+      printf '%s\n' "    Europe/Madrid  Europe/London  Asia/Tokyo  UTC"
       echo ""
       read -r -p "  Ingrese la zona horaria (Enter para UTC): " timezone
       timezone=${timezone:-UTC}

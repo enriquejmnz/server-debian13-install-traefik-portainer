@@ -69,14 +69,23 @@ install_traefik_portainer() {
   prompt_or_default "TRAEFIK_USER" "Ingrese el nombre de usuario para Traefik"
   traefik_user="${TRAEFIK_USER}"
   if [[ -z ${TRAEFIK_PASSWORD:-} ]]; then
-    read -r -s -p "Ingrese la contraseña para Traefik: " traefik_password
-    echo
+    while true; do
+      read -r -s -p "Ingrese la contraseña para Traefik: " traefik_password
+      echo
+      read -r -s -p "Confirme la contraseña para Traefik: " traefik_password_confirm
+      echo
+      if [[ $traefik_password == "$traefik_password_confirm" && -n $traefik_password ]]; then
+        break
+      fi
+      warn "Las contraseñas no coinciden o están vacías. Inténtelo de nuevo."
+    done
   else
     traefik_password="$TRAEFIK_PASSWORD"
   fi
   if [[ -z $traefik_user || -z $traefik_password ]]; then error "El usuario y contraseña de Traefik no pueden estar vacíos"; fi
   traefik_auth=$(htpasswd -nb "$traefik_user" "$traefik_password") || error "Error al generar autenticación para Traefik"
   unset traefik_password
+  unset traefik_password_confirm
 
   # --- Validación DNS antes de continuar ---
   log "Verificando resolución DNS de los subdominios..."

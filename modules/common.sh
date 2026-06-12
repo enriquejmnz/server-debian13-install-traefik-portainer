@@ -6,10 +6,10 @@ export PATH="$PATH:/usr/sbin:/sbin"
 
 # Colores para la salida (solo si se ejecuta en un terminal interactivo)
 if [ -t 1 ]; then
-  RED='\033[0;31m'
-  GREEN='\033[0;32m'
-  YELLOW='\033[0;33m'
-  NC='\033[0m'
+  RED=$'\033[0;31m'
+  GREEN=$'\033[0;32m'
+  YELLOW=$'\033[0;33m'
+  NC=$'\033[0m'
 else
   RED=''
   GREEN=''
@@ -251,21 +251,21 @@ write_log_entry() {
 log() {
   local message
   message="[$(date '+%Y-%m-%d %H:%M:%S')] [INFO] $1"
-  echo -e "${GREEN}[INFO]${NC} $1"
+  printf '%s%s%s %s\n' "$GREEN" "[INFO]" "$NC" "$1"
   write_log_entry "$message"
 }
 
 warn() {
   local message
   message="[$(date '+%Y-%m-%d %H:%M:%S')] [WARN] $1"
-  echo -e "${YELLOW}[WARN]${NC} $1"
+  printf '%s%s%s %s\n' "$YELLOW" "[WARN]" "$NC" "$1"
   write_log_entry "$message"
 }
 
 error() {
   local message
   message="[$(date '+%Y-%m-%d %H:%M:%S')] [ERROR] $1"
-  echo -e "${RED}[ERROR]${NC} $1"
+  printf '%s%s%s %s\n' "$RED" "[ERROR]" "$NC" "$1"
   write_log_entry "$message"
   exit 1
 }

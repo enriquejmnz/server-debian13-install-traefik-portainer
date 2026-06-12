@@ -43,7 +43,7 @@ update_traefik_portainer() {
   fi
 
   # Informar al usuario sobre las actualizaciones encontradas
-  echo -e "${YELLOW}Actualizaciones disponibles:${NC}"
+  printf '%s%s%s\n' "$YELLOW" "Actualizaciones disponibles:" "$NC"
   if [[ $traefik_update_available == true ]]; then
     log "Nueva versión de Traefik encontrada."
   fi
