@@ -46,9 +46,9 @@ Analizar estas notas para generar propuestas de mejora, identificar riesgos pote
   - ✅ Las actualizaciones son manuales: editar `modules/versions.env` para cambiar de versión
   - ✅ `common.sh` lee `versions.env` y deriva `TRAEFIK_IMAGE`/`PORTAINER_IMAGE`
   - ✅ La opción update solo compara digests de la versión pinada (parches de seguridad), no busca versiones nuevas
-- [ ] **Backup y Migración**
-  - Agregar una sección de *backup* para Traefik y Portainer.
-  - Facilitar la migración entre VPS de manera automática y reducir la carga operativa para el administrador.
+- [x] **Backup y Migración**
+  - PRD definido y tareas agregadas a `TODO.md` (sección 10).
+  - Pendiente: implementación de `modules/backup_restore.sh` y pruebas de migración entre VMs.
 
 - [x] **Confirmar contraseña de usuario traefik**
 

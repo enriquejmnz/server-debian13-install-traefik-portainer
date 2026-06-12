@@ -42,6 +42,7 @@ El proyecto combina scripts Bash y una variante Ansible para configurar un servi
 - ✅ Confirmación de contraseña Traefik (segundo ingreso)
 - 🟡 Evaluar docker-socket-proxy como alternativa
 - 🟢 CI test de integración básico
+- 🟡 Backup y migración de Traefik + Portainer (PRD definido)
 - 🟡 Ansible: validación operativa en VM real
 
 ---
@@ -257,7 +258,21 @@ No hay Dockerfiles propios.
 
 ---
 
-## 10. Última sesión (2026-06-05)
+## 10. Backup y Migración (PRD)
+
+Tareas para implementar el módulo de backup y restauración del stack Traefik + Portainer.
+
+| # | Tarea | Prio | Esfuerzo | Estado |
+|---|---|---|---|---|
+| 31 | Crear `modules/backup_restore.sh` con `backup_stack()` y `restore_stack()` | 🟡 | M | ❌ Pendiente |
+| 32 | Integrar en `main.sh`: menú (opción 7) y CLI (`--step backup`, `--step restore`) | 🟡 | S | ❌ Pendiente |
+| 33 | Validación de archivos, permisos restrictivos post-extracción y cambio de dominio opcional | 🟡 | M | ❌ Pendiente |
+| 34 | Actualizar documentación (`README.md`, `AGENTS.md`, `NOTES.md`) | 🟢 | S | ❌ Pendiente |
+| 35 | Pruebas manuales de migración entre VMs (Debian 12/13) | 🟡 | M | ❌ Pendiente |
+
+---
+
+## 11. Última sesión (2026-06-12)
 
 ### Completado
 - `modules/versions.env` creado para Bash (independiente de Ansible)
