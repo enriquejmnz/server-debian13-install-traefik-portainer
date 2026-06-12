@@ -40,6 +40,7 @@ install_traefik_portainer() {
   apt-get install -y apache2-utils || error "Error al instalar apache2-utils"
 
   mkdir -p "$INSTALL_DIR/traefik-data/configurations" "$INSTALL_DIR/portainer-data" || error "Error al crear directorios de instalación"
+  chmod 750 "$INSTALL_DIR" || error "Error al ajustar permisos de $INSTALL_DIR"
 
   trap cleanup_traefik_portainer ERR
 
@@ -118,6 +119,7 @@ networks:
     name: proxy
     driver: bridge
 EOF
+  chmod 640 "$INSTALL_DIR/docker-compose.yml" || error "Error al ajustar permisos de docker-compose.yml"
 
   log "Configurando traefik.yml..."
   # ... (El resto del archivo traefik.yml y dynamic.yml no necesita cambios)
@@ -146,6 +148,7 @@ certificatesResolvers:
 log: { level: INFO }
 accessLog: {}
 EOF
+  chmod 640 "$INSTALL_DIR/traefik-data/traefik.yml" || error "Error al ajustar permisos de traefik.yml"
 
   log "Configurando dynamic.yml..."
   cat >"$INSTALL_DIR/traefik-data/configurations/dynamic.yml" <<EOF
@@ -175,6 +178,8 @@ tls:
         - TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256
       minVersion: VersionTLS12
 EOF
+  chmod 600 "$INSTALL_DIR/traefik-data/configurations/dynamic.yml" || error "Error al ajustar permisos de dynamic.yml"
+  unset traefik_auth
 
   touch "$INSTALL_DIR/traefik-data/acme.json" || error "Error al crear acme.json"
   chmod 600 "$INSTALL_DIR/traefik-data/acme.json" || error "Error al ajustar permisos de acme.json"
