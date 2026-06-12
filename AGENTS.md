@@ -110,7 +110,7 @@ main.sh
               ├── 1 → secure_server()
               ├── 2 → install_docker()
               ├── 3 → install_traefik_portainer()
-              ├── 4 → update_traefik_portainer()
+              ├── 4 → update_traefik_portainer()   (cambio de versión + parches + backup DB)
               ├── 5 → secure_server + install_docker + install_traefik_portainer
               └── 6 → exit
 ```
@@ -447,7 +447,7 @@ Tabla completa de todas las variables configurables del proyecto:
 | `proxy_subnet` | No | `172.18.0.0/16` | Subnet de la red Docker "proxy" | Hardcoded en `install_traefik.sh` | `vars.yml` |
 | `DOCKER_CLEAN_INSTALL` / `docker_clean_install` | No | `false` | Remove /var/lib/docker and /var/lib/containerd on Docker install | Not in Bash | `install.yml` |
 
-**Nota sobre versiones**: Las versiones de Traefik y Portainer se definen en `modules/versions.env` (Bash) y `ansible/inventory/group_vars/all/versions.env` (Ansible). Cada sistema tiene su propio archivo — ambos se actualizan manualmente al cambiar de versión. La opción 4 del menú (update) **no busca nuevas versiones** en Docker Hub, solo verifica si el digest de la imagen pinada cambió (ej: security patch de la misma versión).
+**Nota sobre versiones**: Las versiones de Traefik y Portainer se definen en `modules/versions.env` (Bash) y `ansible/inventory/group_vars/all/versions.env` (Ansible). Cada sistema tiene su propio archivo. Para cambiar de versión sin editar archivos manualmente, la opción 4 del menú (update) pregunta interactivamente y escribe en `versions.env`. El modo `--non-interactive` requiere editar el archivo `.env` o `versions.env` directamente antes de ejecutar.
 
 ---
 
@@ -527,7 +527,7 @@ ansible-playbook ansible/playbooks/site.yml --syntax-check
 | Solo hardening | `sudo bash main.sh` → opción 1 | `ansible-playbook ansible/playbooks/hardening.yml --ask-vault-pass` |
 | Solo Docker | `sudo bash main.sh` → opción 2 | `ansible-playbook ansible/playbooks/docker.yml` |
 | Solo Traefik + Portainer | `sudo bash main.sh` → opción 3 | `ansible-playbook ansible/playbooks/traefik_portainer.yml --ask-vault-pass` |
-| Actualizar contenedores | `sudo bash main.sh` → opción 4 | `ansible-playbook ansible/playbooks/update.yml` |
+| Actualizar contenedores (parches de seguridad, cambio de versión) | `sudo bash main.sh` → opción 4 | `ansible-playbook ansible/playbooks/update.yml` |
 | Solo hardening (CLI) | `sudo bash main.sh --non-interactive --step secure --env-file .env` | — |
 | Ver ayuda | `sudo bash main.sh --help` | — |
 | Dry-run (ver cambios) | No disponible | `ansible-playbook ... --check --diff` |
@@ -813,7 +813,7 @@ Lista priorizada de mejoras futuras:
 
 3. **[x] Centralizar versiones de imágenes Docker** — Versiones de Traefik y Portainer en archivos `versions.env` independientes para Bash y Ansible.
 
-4. **[ ] Eliminar IPs estáticas de docker-compose.yml** — Las IPs `172.18.0.2` y `172.18.0.3` no son necesarias. Traefik usa autodiscovery por nombre de contenedor. Simplifica la configuración y evita conflictos.
+4. **[x] Eliminar IPs estáticas de docker-compose.yml** — Las IPs `172.18.0.2` y `172.18.0.3` no son necesarias. Traefik usa autodiscovery por nombre de contenedor. Simplifica la configuración y evita conflictos.
 
 ### Media prioridad
 
