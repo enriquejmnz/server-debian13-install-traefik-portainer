@@ -90,7 +90,9 @@ El menú interactivo ofrece las siguientes opciones:
      Traefik + Portainer · cambio de versión
   5) Instalación completa en secuencia
      Ejecuta opciones 1 → 2 → 3
-  6) Salir
+  6) Verificar estado del sistema
+     SSH · UFW · Docker · Traefik · recursos
+  7) Salir
 ```
 
 Cada opción arranca con un banner descriptivo, una pausa con "Presione Enter (Ctrl+C para cancelar)", y finaliza con un resumen visual de lo aplicado. La opción 1 (hardening) tiene además un checkpoint previo donde podés revisar el resumen de cambios antes de aplicar nada irreversible.
@@ -102,6 +104,7 @@ sudo bash main.sh --help                                     # Ver opciones
 sudo bash main.sh --non-interactive --step secure            # Solo hardening
 sudo bash main.sh --non-interactive --step docker            # Solo Docker
 sudo bash main.sh --non-interactive --step traefik           # Solo Traefik+Portainer
+sudo bash main.sh --non-interactive --step verify            # Diagnóstico del sistema
 sudo bash main.sh --non-interactive --step all               # Todo
 sudo bash main.sh --non-interactive --step all --env-file .env  # Con .env personalizado
 ```

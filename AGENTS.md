@@ -112,7 +112,8 @@ main.sh
               ├── 3 → install_traefik_portainer()
               ├── 4 → update_traefik_portainer()   (cambio de versión + parches + backup DB)
               ├── 5 → secure_server + install_docker + install_traefik_portainer
-              └── 6 → exit
+              ├── 6 → verify_services()              (diagnóstico del sistema)
+              └── 7 → exit
 ```
 
 Todos los módulos son **funciones Bash puras** definidas en sus respectivos archivos. El sourcing en `main.sh` las carga en memoria. No existe estado compartido entre módulos salvo las variables de `common.sh`.
@@ -220,7 +221,7 @@ sudo bash main.sh --non-interactive --step secure
 sudo bash main.sh --non-interactive --step all --env-file /ruta/.env
 ```
 
-Pasos disponibles: `secure`, `docker`, `traefik`, `update`, `all`.
+Pasos disponibles: `secure`, `docker`, `traefik`, `update`, `verify`, `all`.
 
 En modo `--non-interactive`, si falta una variable requerida el script falla con un mensaje claro. Ver [`example.env`](example.env) para la lista completa de variables.
 
@@ -532,6 +533,8 @@ ansible-playbook ansible/playbooks/site.yml --syntax-check
 | Solo Docker | `sudo bash main.sh` → opción 2 | `ansible-playbook ansible/playbooks/docker.yml` |
 | Solo Traefik + Portainer | `sudo bash main.sh` → opción 3 | `ansible-playbook ansible/playbooks/traefik_portainer.yml --ask-vault-pass` |
 | Actualizar contenedores (parches de seguridad, cambio de versión) | `sudo bash main.sh` → opción 4 | `ansible-playbook ansible/playbooks/update.yml` |
+| Diagnóstico del sistema | `sudo bash main.sh` → opción 6 | — |
+| Diagnóstico (CLI) | `sudo bash main.sh --step verify` | — |
 | Solo hardening (CLI) | `sudo bash main.sh --non-interactive --step secure --env-file .env` | — |
 | Ver ayuda | `sudo bash main.sh --help` | — |
 | Dry-run (ver cambios) | No disponible | `ansible-playbook ... --check --diff` |

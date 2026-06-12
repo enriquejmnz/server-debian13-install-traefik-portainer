@@ -37,8 +37,9 @@ Analizar estas notas para generar propuestas de mejora, identificar riesgos pote
 - [ ] **Seguridad: Usuario Sudo y Acceso SSH**
   - Verificar si es técnicamente correcto delegar privilegios `sudo` al administrador y evitar el uso de `root`.
   - Confirmar si este mismo usuario puede ser el utilizado para la autenticación SSH mediante clave pública.
-- [ ] **Verificación de servicios**
-  - Agregar una opción de test para verificar que los servicios instalados funcionen correctamente y ofrecer un resumen del estado del sistema.
+- [x] **Verificación de servicios**
+  - Nueva opción 6 en el menú y `--step verify` en CLI
+  - Módulo `verify_services.sh`: chequea SSH, UFW, fail2ban, Docker, Traefik, Portainer, TLS, recursos
 - [ ] **Seguridad: Grupo Docker**
   - Evaluar si, por seguridad, el usuario administrador no debe ser parte del grupo `docker`.
 - [x] **Gestión de versiones (Traefik y Portainer)**
