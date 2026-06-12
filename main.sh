@@ -136,15 +136,28 @@ fi
 # Menú interactivo
 show_menu() {
   clear
-  clear
-  printf '%s\n' "${GREEN}=== Configuración de Servidor Debian 12 / 13 ===${NC}"
-  printf '%s\n' "1. Asegurar el servidor"
-  printf '%s\n' "2. Instalar Docker y Docker Compose"
-  printf '%s\n' "3. Instalar Traefik y Portainer"
-  printf '%s\n' "4. Buscar parches de seguridad para Traefik y Portainer"
-  printf '%s\n' "5. Ejecutar todos los procesos secuencialmente (1-3)"
-  printf '%s\n' "6. Salir"
-  printf '%s' "${YELLOW}Seleccione una opción (1-6):${NC} "
+  printf '%s\n' "${GREEN}╔══════════════════════════════════════════════╗${NC}"
+  printf '%s\n' "${GREEN}║    CONFIGURACIÓN DE SERVIDOR DEBIAN 12/13   ║${NC}"
+  printf '%s\n' "${GREEN}╚══════════════════════════════════════════════╝${NC}"
+  echo ""
+  printf '%s\n' "  ${GREEN}1${NC}) Asegurar el servidor"
+  printf '%s\n' "       UFW · SSH · fail2ban · auditd · límites"
+  echo ""
+  printf '%s\n' "  ${GREEN}2${NC}) Instalar Docker y Docker Compose"
+  printf '%s\n' "       Docker Engine · daemon.json · usuario"
+  echo ""
+  printf '%s\n' "  ${GREEN}3${NC}) Instalar Traefik y Portainer"
+  printf '%s\n' "       Reverse proxy · TLS automático · dashboard"
+  echo ""
+  printf '%s\n' "  ${GREEN}4${NC}) Buscar parches de seguridad"
+  printf '%s\n' "       Traefik + Portainer · cambio de versión"
+  echo ""
+  printf '%s\n' "  ${GREEN}5${NC}) Instalación completa en secuencia"
+  printf '%s\n' "       Ejecuta opciones 1 → 2 → 3"
+  echo ""
+  printf '%s\n' "  ${GREEN}6${NC}) Salir"
+  echo ""
+  printf '%s' "${YELLOW}  Seleccione una opción (1-6):${NC} "
 }
 
 # Procesar la selección del menú

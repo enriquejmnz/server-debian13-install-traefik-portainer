@@ -29,6 +29,24 @@ install_docker() {
   local docker_repo_url docker_keyring docker_architecture
 
   require_supported_debian
+
+  clear
+  printf '%s\n' "${GREEN}╔══════════════════════════════════════════════╗${NC}"
+  printf '%s\n' "${GREEN}║      INSTALACIÓN DE DOCKER ENGINE           ║${NC}"
+  printf '%s\n' "${GREEN}╚══════════════════════════════════════════════╝${NC}"
+  echo ""
+  printf '%s\n' "  Este proceso realizará:"
+  printf '%s\n' "    1. Eliminar instalaciones previas de Docker"
+  printf '%s\n' "    2. Agregar repositorio oficial de Docker"
+  printf '%s\n' "    3. Instalar Docker Engine + Compose plugin"
+  printf '%s\n' "    4. Configurar daemon.json con hardening"
+  printf '%s\n' "    5. Configurar usuario administrador (opcional)"
+  echo ""
+
+  if [[ $NON_INTERACTIVE == false ]]; then
+    read -r -p "  Presione Enter para continuar (Ctrl+C para cancelar)..."
+  fi
+
   log "Iniciando instalación de Docker..."
 
   log "Eliminando instalaciones previas de Docker..."
@@ -69,6 +87,7 @@ EOF
   systemctl enable docker.service || error "Error al habilitar Docker"
   systemctl enable containerd.service || error "Error al habilitar containerd"
   systemctl start docker || error "Error al iniciar Docker"
+  log "✓ Docker Engine instalado y en ejecución"
 
   docker_user=""
   configure_docker_user
@@ -91,6 +110,7 @@ EOF
 
   log "Reiniciando Docker para aplicar la configuración..."
   systemctl restart docker || error "Error al reiniciar Docker"
+  log "✓ daemon.json aplicado"
 
   log "Verificando instalación de Docker..."
   docker --version
@@ -100,9 +120,18 @@ EOF
   mkdir -p /opt/docker-compose || error "Error al crear directorio /opt/docker-compose"
   chmod 755 /opt/docker-compose || error "Error al configurar permisos de /opt/docker-compose"
 
-  log "Instalación de Docker completada con éxito"
+  echo ""
+  printf '%s\n' "${GREEN}╔══════════════════════════════════════════════╗${NC}"
+  printf '%s\n' "${GREEN}║      DOCKER INSTALADO CON ÉXITO             ║${NC}"
+  printf '%s\n' "${GREEN}╚══════════════════════════════════════════════╝${NC}"
+  echo ""
+  printf '%s\n' "  🐳 Docker Engine:       instalado y en ejecución"
+  printf '%s\n' "  🐳 Docker Compose:      plugin v2 disponible"
+  printf '%s\n' "  🛡️  daemon.json:         hardening aplicado"
   if [[ -n $docker_user ]]; then
-    log "  - Usuario configurado para administrar Docker: $docker_user"
-    log "NOTA: Para que los cambios en los permisos del grupo tengan efecto, el usuario debe cerrar sesión e iniciarla nuevamente"
+    printf '%s\n' "  👤 Usuario Docker:       ${GREEN}${docker_user}${NC}"
+    printf '%s\n' "  ⚠️  NOTA: Para usar docker sin sudo, cerrar e iniciar sesión."
   fi
+  echo ""
+  log "Instalación de Docker completada con éxito"
 }

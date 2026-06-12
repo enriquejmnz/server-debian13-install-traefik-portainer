@@ -10,6 +10,24 @@ cleanup_traefik_portainer() {
 # Función para instalar Traefik y Portainer
 install_traefik_portainer() {
   require_supported_debian
+
+  clear
+  printf '%s\n' "${GREEN}╔══════════════════════════════════════════════╗${NC}"
+  printf '%s\n' "${GREEN}║    INSTALACIÓN DE TRAEFIK Y PORTAINER       ║${NC}"
+  printf '%s\n' "${GREEN}╚══════════════════════════════════════════════╝${NC}"
+  echo ""
+  printf '%s\n' "  Este proceso realizará:"
+  printf '%s\n' "    1. Crear directorios y red Docker"
+  printf '%s\n' "    2. Generar configs (compose, traefik, dynamic)"
+  printf '%s\n' "    3. Verificar resolución DNS de subdominios"
+  printf '%s\n' "    4. Desplegar Traefik + Portainer"
+  printf '%s\n' "    5. Abrir puertos 80/443 en UFW"
+  echo ""
+
+  if [[ $NON_INTERACTIVE == false ]]; then
+    read -r -p "  Presione Enter para continuar (Ctrl+C para cancelar)..."
+  fi
+
   log "Iniciando instalación de Traefik y Portainer..."
   if ! command -v docker &>/dev/null; then
     error "Docker no está instalado. Ejecute primero la instalación de Docker."
@@ -240,10 +258,16 @@ EOF
     log "Puertos 80 y 443 abiertos en el firewall."
   fi
 
+  echo ""
+  printf '%s\n' "${GREEN}╔══════════════════════════════════════════════╗${NC}"
+  printf '%s\n' "${GREEN}║   TRAEFIK + PORTAINER INSTALADOS            ║${NC}"
+  printf '%s\n' "${GREEN}╚══════════════════════════════════════════════╝${NC}"
+  echo ""
+  printf '%s\n' "  🔀 Traefik:    ${GREEN}https://${traefik_subdomain}.${base_domain}${NC}"
+  printf '%s\n' "  📦 Portainer:  ${GREEN}https://${portainer_subdomain}.${base_domain}${NC}"
+  printf '%s\n' "  👤 Usuario:    ${GREEN}${traefik_user}${NC}"
+  printf '%s\n' "  🔒 TLS:        Let's Encrypt (puede tardar unos minutos)"
+  echo ""
   log "Instalación de Traefik y Portainer completada con éxito"
-  log "  - Traefik: https://${traefik_subdomain}.${base_domain}"
-  log "  - Portainer: https://${portainer_subdomain}.${base_domain}"
-  log "  - Usuario Traefik: $traefik_user"
-  log "NOTA: Los certificados SSL pueden tardar unos minutos en generarse."
   trap - ERR
 }

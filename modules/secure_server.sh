@@ -200,6 +200,18 @@ secure_server() {
   printf '%s\n' "${GREEN}║   CONFIGURACIÓN DE SEGURIDAD DEL SERVIDOR   ║${NC}"
   printf '%s\n' "${GREEN}╚══════════════════════════════════════════════╝${NC}"
   echo ""
+  printf '%s\n' "  Este proceso realizará:"
+  printf '%s\n' "    1. Actualización del sistema (apt update + upgrade)"
+  printf '%s\n' "    2. Instalación de paquetes de seguridad"
+  printf '%s\n' "    3. Configuración de SSH (puerto y autenticación)"
+  printf '%s\n' "    4. Creación de usuario administrador"
+  printf '%s\n' "    5. Hardening: UFW, fail2ban, límites, timezone, auditd"
+  echo ""
+
+  if [[ $NON_INTERACTIVE == false ]]; then
+    read -r -p "  Presione Enter para continuar (Ctrl+C para cancelar)..."
+  fi
+
   log "Iniciando hardening de seguridad..."
 
   # =====================================================================

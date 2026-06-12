@@ -4,6 +4,24 @@
 # Función para verificar y actualizar Traefik y Portainer
 update_traefik_portainer() {
   require_supported_debian
+
+  clear
+  printf '%s\n' "${GREEN}╔══════════════════════════════════════════════╗${NC}"
+  printf '%s\n' "${GREEN}║   PARCHE DE SEGURIDAD — TRAEFIK+PORTAINER   ║${NC}"
+  printf '%s\n' "${GREEN}╚══════════════════════════════════════════════╝${NC}"
+  echo ""
+  printf '%s\n' "  Este proceso realizará:"
+  printf '%s\n' "    1. Mostrar versiones actuales"
+  printf '%s\n' "    2. Opción de cambiar versión de Traefik/Portainer"
+  printf '%s\n' "    3. Buscar parches de seguridad (pull)"
+  printf '%s\n' "    4. Backup preventivo de la DB de Portainer"
+  printf '%s\n' "    5. Aplicar actualización si hay cambios"
+  echo ""
+
+  if [[ $NON_INTERACTIVE == false ]]; then
+    read -r -p "  Presione Enter para continuar (Ctrl+C para cancelar)..."
+  fi
+
   log "Verificando actualizaciones para Traefik y Portainer..."
 
   if ! command -v docker &>/dev/null; then
