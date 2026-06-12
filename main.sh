@@ -80,7 +80,7 @@ Opciones:
   --help, -h              Muestra esta ayuda
   --non-interactive       Modo no interactivo (requiere .env)
   --step PASO             Ejecuta un paso específico y sale
-                          Valores: secure, docker, traefik, update, all
+                          Valores: secure, docker, traefik, update, verify, all
   --env-file ARCHIVO      Ruta al archivo .env (defecto: ./.env)
 EOF
 }
@@ -123,12 +123,13 @@ if [[ -n $STEP ]]; then
   docker) install_docker ;;
   traefik) install_traefik_portainer ;;
   update) update_traefik_portainer ;;
+  verify) verify_services ;;
   all)
     secure_server
     install_docker
     install_traefik_portainer
     ;;
-  *) error "Paso desconocido: $STEP. Valores: secure, docker, traefik, update, all" ;;
+  *) error "Paso desconocido: $STEP. Valores: secure, docker, traefik, update, verify, all" ;;
   esac
   exit 0
 fi
@@ -155,9 +156,12 @@ show_menu() {
   printf '%s\n' "  ${GREEN}5${NC}) Instalación completa en secuencia"
   printf '%s\n' "       Ejecuta opciones 1 → 2 → 3"
   echo ""
-  printf '%s\n' "  ${GREEN}6${NC}) Salir"
+  printf '%s\n' "  ${GREEN}6${NC}) Verificar estado del sistema"
+  printf '%s\n' "       SSH · UFW · Docker · Traefik · recursos"
   echo ""
-  printf '%s' "${YELLOW}  Seleccione una opción (1-6):${NC} "
+  printf '%s\n' "  ${GREEN}7${NC}) Salir"
+  echo ""
+  printf '%s' "${YELLOW}  Seleccione una opción (1-7):${NC} "
 }
 
 # Procesar la selección del menú
@@ -193,6 +197,11 @@ process_choice() {
     read -r
     ;;
   6)
+    verify_services
+    log "Presione Enter para volver al menú..."
+    read -r
+    ;;
+  7)
     log "Saliendo..."
     exit 0
     ;;
