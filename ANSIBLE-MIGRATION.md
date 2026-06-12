@@ -2,7 +2,7 @@
 
 Guía completa del proyecto Ansible para `server-debian13-install-traefik-portainer`.
 
-> **Estado real hoy**: la implementación Ansible **soporta Debian 12 y Debian 13**, con **Debian 13** como ruta más validada. **Ubuntu sigue sin soporte**. Los scripts Bash siguen disponibles para instalaciones rápidas en un único servidor. La fuente de verdad sobre soporte y roadmap es **[`PLATFORM-SUPPORT.md`](PLATFORM-SUPPORT.md)**.
+> **Estado real hoy**: la implementación Ansible **soporta Debian 12 y Debian 13** con Molecule + lint, pero **aún no se ha validado en VM real**. **Ubuntu sigue sin soporte**. Los scripts Bash están validados en VMs reales para Debian 12 y 13. La fuente de verdad sobre soporte y roadmap es **[`PLATFORM-SUPPORT.md`](PLATFORM-SUPPORT.md)**.
 
 ---
 

@@ -8,9 +8,8 @@ Instalador modular para configurar un servidor **Debian** con hardening de segur
 
 > **Estado real hoy**
 >
-> - **Ruta más validada:** Ansible sobre **Debian 13 (Trixie)**
-> - **Ansible:** soporta **Debian 12 (Bookworm)** y **Debian 13 (Trixie)**; Debian 13 sigue siendo el camino con más validación operativa
-> - **Scripts Bash:** soportan **Debian 12** y **Debian 13**, validan distro explícitamente y rechazan Ubuntu; todavía sin smoke test automatizado end-to-end
+> - **Bash:** ✅ **Validado** en Debian 12 y Debian 13 en VMs reales
+> - **Ansible:** ⏳ Implementado con Molecule + lint, **pendiente de validación en VM real**
 > - **Ubuntu Server:** **no soportado actualmente**
 >
 > Ver detalle en **[PLATFORM-SUPPORT.md](PLATFORM-SUPPORT.md)**.
@@ -52,7 +51,7 @@ Todo lo anterior en servidores Debian objetivo, más:
 - **Acceso SSH** desde la máquina de control a los servidores objetivo
 - **Colecciones Galaxy**: `community.general`, `community.docker`, `ansible.posix`
 
-> **Importante**: la ruta Ansible soporta Debian 12/13 con guards explícitos y Molecule puede ejecutarse sobre ambas versiones. Debian 13 sigue siendo la ruta más validada operativamente. Ubuntu no está soportado.
+> **Importante**: la ruta Ansible soporta Debian 12/13 con guards explícitos y Molecule puede ejecutarse sobre ambas versiones, pero **aún no se ha validado en VM real**. Ubuntu no está soportado.
 
 ---
 
@@ -210,7 +209,7 @@ server-debian13-install-traefik-portainer/
 │
 ├── main.sh                   # Punto de entrada con menú interactivo
 │
-├── ansible/                  # Proyecto Ansible (implementado; Debian 13 más validado)
+├── ansible/                  # Proyecto Ansible (implementado; pendiente de validación en VM real)
 │   ├── ansible.cfg
 │   ├── requirements.yml      # Colecciones: community.general, community.docker, ansible.posix
 │   ├── inventory/

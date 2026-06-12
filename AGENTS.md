@@ -7,26 +7,26 @@ Un agente puede empezar a contribuir leyendo solo este archivo.
 
 ## 1. Descripción del proyecto
 
-**`server-debian13-install-traefik-portainer`** es un instalador modular para configurar un servidor Debian con foco actual en **Debian 13 (Trixie)**, hoy la ruta más validada del proyecto, con soporte implementado para **Debian 12 y Debian 13** en Bash y Ansible:
+**`server-debian13-install-traefik-portainer`** es un instalador modular para configurar un servidor Debian. **Bash está validado en Debian 12 y Debian 13 en VMs reales. Ansible está implementado con Molecule + lint, pendiente de validación en VM real.**
 
 - **Hardening de seguridad**: UFW, fail2ban (backend systemd), SSH endurecido, límites del sistema, auditd, actualizaciones automáticas
 - **Docker Engine**: instalación desde repositorio oficial, daemon.json reforzado, usuario de gestión opcional
-- **Traefik v3 + Portainer CE**: reverse proxy con TLS automático (Let's Encrypt) y panel de gestión de contenedores; la versión de Portainer sale de una única fuente canónica compartida por Bash y Ansible
+- **Traefik v3 + Portainer CE**: reverse proxy con TLS automático (Let's Encrypt) y panel de gestión de contenedores; versiones desde `versions.env` compartido entre Bash y Ansible
 
 **Stack tecnológico:**
 - Bash 5 (scripts de instalación)
 - Docker Engine + Docker Compose plugin
 - Traefik v3 (reverse proxy)
 - Portainer CE (gestión de contenedores)
-- Ansible (implementación actual, soporta Debian 12/13 y sigue más validada en Debian 13 — ver `ANSIBLE-MIGRATION.md`)
+- Ansible (implementado, **pendiente de validación en VM real**)
 - GitHub Actions (CI con ShellCheck + shfmt + ansible-lint + Molecule)
 
-**Objetivo**: permitir configurar un servidor Debian seguro con proxy inverso TLS en menos de 30 minutos, priorizando hoy Debian 13 como camino recomendado.
+**Objetivo**: permitir configurar un servidor Debian seguro con proxy inverso TLS en menos de 30 minutos.
 
 > **Estado de soporte hoy**
 >
-> - **Debian 13**: camino más validado
-> - **Debian 12**: soportado en Bash y Ansible, pero con menos validación operativa que Debian 13
+> - **Bash / Debian 12 y 13**: ✅ **Validado** en VMs reales
+> - **Ansible / Debian 12 y 13**: ⏳ Implementado con Molecule + lint, pendiente de validación en VM real
 > - **Ubuntu Server**: **no soportado actualmente**
 >
 > La fuente de verdad para soporte y roadmap es **[`PLATFORM-SUPPORT.md`](PLATFORM-SUPPORT.md)**.
@@ -54,8 +54,7 @@ server-debian13-install-traefik-portainer/
 │   ├── secure_server.sh          # Hardening: UFW, SSH, fail2ban, límites, auditd, usuario admin
 │   ├── install_docker.sh         # Docker Engine desde repositorio oficial + daemon.json
 │   ├── install_traefik.sh        # Traefik + Portainer via Docker Compose
-│   ├── update_traefik.sh         # Actualizar imágenes y limpiar las antiguas
-│   └── install_docker.txt        # Notas/referencia (no es un script ejecutable)
+│   └── update_traefik.sh         # Actualizar imágenes y limpiar las antiguas
 │
 ├── main.sh                       # Punto de entrada: carga módulos, menú interactivo
 │
@@ -201,7 +200,7 @@ Los scripts obtienen su configuración mediante `read -p` (interactivo). No hay 
 
 ### 3.5 Requisitos de ejecución
 
-- **OS**: Debian 12 (Bookworm) y Debian 13 (Trixie) están soportados en la ruta Bash; Debian 13 sigue siendo el camino más validado y Ubuntu no está soportado
+- **OS**: Debian 12 (Bookworm) y Debian 13 (Trixie) están soportados en la ruta Bash (validados en VMs reales); Ubuntu no está soportado
 - **Usuario**: root (`id -u == 0`) — verificado al inicio de `main.sh`
 - **Conectividad**: acceso a internet (descarga de paquetes y GPG keys de Docker)
 - **DNS**: dominio base configurado y apuntando al servidor antes de instalar Traefik
@@ -216,7 +215,7 @@ bash main.sh
 
 ## 4. Guía del Proyecto Ansible
 
-> La variante Ansible ya está implementada, soporta **Debian 12 y Debian 13**, y sigue teniendo en **Debian 13** el camino más validado del repo. Ubuntu **no** está soportado. Ver `ANSIBLE-MIGRATION.md` para arquitectura y `PLATFORM-SUPPORT.md` para estado real de soporte.
+> La variante Ansible ya está implementada, soporta **Debian 12 y Debian 13** con Molecule + lint, pero **pendiente de validación en VM real**. Ubuntu **no** está soportado. Ver `ANSIBLE-MIGRATION.md` para arquitectura y `PLATFORM-SUPPORT.md` para estado real de soporte.
 
 ### 4.1 Estructura de roles
 
@@ -412,6 +411,7 @@ Tabla completa de todas las variables configurables del proyecto:
 | `PORTAINER_VERSION` | No | `2.39.3` | Versión canónica de Portainer | `modules/versions.env` | `ansible/inventory/group_vars/all/versions.env` |
 | `TRAEFIK_VERSION` | No | `v3.7.4` | Versión canónica de Traefik | `modules/versions.env` | `ansible/inventory/group_vars/all/versions.env` |
 | `PORTAINER_IMAGE` / `portainer_image` | No | Derivada de `PORTAINER_VERSION` | Imagen Docker de Portainer | Derivada en `modules/common.sh` | Derivada en defaults de `traefik_portainer` y `update` |
+| `DOCKER_CLEAN_INSTALL` / `docker_clean_install` | No | `false` | Remove /var/lib/docker and /var/lib/containerd on Docker install | Not in Bash | `install.yml` |
 | `fail2ban_bantime` | No | `3600` (segundos) | Tiempo de ban en fail2ban | Hardcoded en `secure_server.sh` | `vars.yml` |
 | `fail2ban_maxretry` | No | `3` | Intentos máximos antes de ban (jail SSH) | Hardcoded en `secure_server.sh` | `vars.yml` |
 | `proxy_subnet` | No | `172.18.0.0/16` | Subnet de la red Docker "proxy" | Hardcoded en `install_traefik.sh` | `vars.yml` |
