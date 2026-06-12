@@ -228,6 +228,10 @@ En modo `--non-interactive`, si falta una variable requerida el script falla con
 
 Antes de instalar Traefik, el script verifica que los subdominios configurados resuelvan a la IP pública del servidor. En modo interactivo permite continuar si DNS aún está propagando; en `--non-interactive` falla si la validación no pasa.
 
+### 3.8 UI interactiva
+
+Cada opción del menú arranca con un banner enmarcado, un resumen de lo que se va a hacer, y una pausa para confirmación (`Ctrl+C` para cancelar). Al finalizar, muestra un resumen visual con colores y checkmarks. La opción de hardening tiene además un **checkpoint previo** que muestra todos los cambios antes de aplicar nada irreversible. Este checkpoint se saltea en modo `--non-interactive`.
+
 ### 3.5 Requisitos de ejecución
 
 - **OS**: Debian 12 (Bookworm) y Debian 13 (Trixie) están soportados en la ruta Bash (validados en VMs reales); Ubuntu no está soportado

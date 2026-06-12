@@ -76,13 +76,24 @@ Si ejecutás `main.sh` sobre Ubuntu u otra distro no soportada, el instalador co
 El menú interactivo ofrece las siguientes opciones:
 
 ```
-1. Securizar servidor        — UFW, SSH, fail2ban, limits, auditd
-2. Instalar Docker           — Docker Engine + daemon.json
-3. Instalar Traefik+Portainer — Stack completo con TLS
-4. Actualizar contenedores   — Pull + recrear + prune
-5. Instalación completa      — Opciones 1+2+3 en secuencia
-6. Salir
+╔══════════════════════════════════════════════╗
+║    CONFIGURACIÓN DE SERVIDOR DEBIAN 12/13   ║
+╚══════════════════════════════════════════════╝
+
+  1) Asegurar el servidor
+     UFW · SSH · fail2ban · auditd · límites
+  2) Instalar Docker y Docker Compose
+     Docker Engine · daemon.json · usuario
+  3) Instalar Traefik y Portainer
+     Reverse proxy · TLS automático · dashboard
+  4) Buscar parches de seguridad
+     Traefik + Portainer · cambio de versión
+  5) Instalación completa en secuencia
+     Ejecuta opciones 1 → 2 → 3
+  6) Salir
 ```
+
+Cada opción arranca con un banner descriptivo, una pausa con "Presione Enter (Ctrl+C para cancelar)", y finaliza con un resumen visual de lo aplicado. La opción 1 (hardening) tiene además un checkpoint previo donde podés revisar el resumen de cambios antes de aplicar nada irreversible.
 
 ### Modo no interactivo (CLI)
 

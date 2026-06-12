@@ -30,9 +30,10 @@ Analizar estas notas para generar propuestas de mejora, identificar riesgos pote
 
 ## Inbox
 
-- [ ] **Análisis de flujo de configuración (Parte 1 Script)**
-  - Evaluar si el orden actual (puerto SSH, luego usuario y aseguramiento) es el más adecuado para la usabilidad.
-  - Implementar cambios si se determina un flujo más eficiente.
+- [x] **Análisis de flujo de configuración (Parte 1 Script)**
+  - El orden actual (puerto SSH → usuario admin → hardening) es el correcto para seguridad
+  - Se agregó checkpoint visual antes del hardening para que el usuario revise cambios
+  - Todas las opciones del menú ahora tienen banner introductorio con resumen y pausa
 - [ ] **Seguridad: Usuario Sudo y Acceso SSH**
   - Verificar si es técnicamente correcto delegar privilegios `sudo` al administrador y evitar el uso de `root`.
   - Confirmar si este mismo usuario puede ser el utilizado para la autenticación SSH mediante clave pública.
