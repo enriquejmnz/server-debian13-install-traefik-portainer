@@ -47,8 +47,9 @@ Analizar estas notas para generar propuestas de mejora, identificar riesgos pote
   - ✅ `common.sh` lee `versions.env` y deriva `TRAEFIK_IMAGE`/`PORTAINER_IMAGE`
   - ✅ La opción update solo compara digests de la versión pinada (parches de seguridad), no busca versiones nuevas
 - [x] **Backup y Migración**
-  - PRD definido y tareas agregadas a `TODO.md` (sección 10).
-  - Pendiente: implementación de `modules/backup_restore.sh` y pruebas de migración entre VMs.
+  - ✅ Módulo `modules/backup_restore.sh` implementado con `backup_stack` y `restore_stack`.
+  - ✅ Integrado en menú (opción 7) y CLI (`--step backup`, `--step restore`).
+  - ⏳ Pendiente: Pruebas manuales de migración entre VMs (Debian 12/13).
 
 - [x] **Confirmar contraseña de usuario traefik**
 
