@@ -1,2 +1,2 @@
-disable=SC1090,SC1091,SC2034,SC2154
-# Rationale: SC1090/SC1091 from dynamic 'source'; SC2034 for intentionally unused vars; SC2154 for cross-file vars
+disable=SC1090,SC1091,SC2034,SC2154,SC2153
+# Rationale: SC1090/SC1091 from dynamic 'source'; SC2034 for intentionally unused vars; SC2154 for cross-file vars; SC2153 for uppercase .env vars

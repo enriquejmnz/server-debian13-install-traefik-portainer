@@ -67,6 +67,72 @@ fi
 # Detectar plataforma soportada al inicio
 detect_debian_version
 
+# --- CLI argument parsing ---
+NON_INTERACTIVE=false
+STEP=""
+ENV_FILE=""
+
+show_usage() {
+  cat <<EOF
+Uso: ${0##*/} [OPCIONES]
+
+Opciones:
+  --help, -h              Muestra esta ayuda
+  --non-interactive       Modo no interactivo (requiere .env)
+  --step PASO             Ejecuta un paso específico y sale
+                          Valores: secure, docker, traefik, update, all
+  --env-file ARCHIVO      Ruta al archivo .env (defecto: ./.env)
+EOF
+}
+
+while [[ $# -gt 0 ]]; do
+  case "${1:-}" in
+  --help | -h)
+    show_usage
+    exit 0
+    ;;
+  --non-interactive)
+    NON_INTERACTIVE=true
+    shift
+    ;;
+  --step)
+    STEP="${2?--step requiere un argumento}"
+    shift 2
+    ;;
+  --env-file)
+    ENV_FILE="${2?--env-file requiere un argumento}"
+    shift 2
+    ;;
+  *) error "Opción desconocida: $1. Use --help." ;;
+  esac
+done
+
+# Cargar .env si existe
+ENV_FILE="${ENV_FILE:-${PROJECT_ROOT}/.env}"
+if [[ -f $ENV_FILE ]]; then
+  log "Cargando variables desde $ENV_FILE..."
+  set -a
+  source "$ENV_FILE"
+  set +a
+fi
+
+# Si se especificó --step, ejecutar y salir
+if [[ -n $STEP ]]; then
+  case "$STEP" in
+  secure) secure_server ;;
+  docker) install_docker ;;
+  traefik) install_traefik_portainer ;;
+  update) update_traefik_portainer ;;
+  all)
+    secure_server
+    install_docker
+    install_traefik_portainer
+    ;;
+  *) error "Paso desconocido: $STEP. Valores: secure, docker, traefik, update, all" ;;
+  esac
+  exit 0
+fi
+
 # Menú interactivo
 show_menu() {
   clear

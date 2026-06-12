@@ -33,9 +33,9 @@ El proyecto combina scripts Bash y una variante Ansible para configurar un servi
 - ✅ Permisos restrictivos en `$INSTALL_DIR` y configs generados
 - ✅ SCRIPT_VERSION en `common.sh`
 - ✅ check_error() eliminada (código muerto)
-- 🟡 Validación DNS de subdominios antes de Let's Encrypt
-- 🟡 Flags CLI básicos (`--help`)
-- 🟡 Soporte `.env` para preconfiguración no interactiva
+- ✅ Validación DNS de subdominios antes de Let's Encrypt
+- ✅ Flags CLI básicos (`--help`, `--non-interactive`, `--step`, `--env-file`)
+- ✅ Soporte `.env` para preconfiguración no interactiva
 - 🟡 Evaluar docker-socket-proxy como alternativa
 - 🟢 CI test de integración básico
 - 🟢 Indentación inconsistente en `secure_server.sh`
@@ -143,14 +143,14 @@ Ya implementado: no se pasan variables sensibles a log. Pendiente añadir coment
 
 ## 5. Mejoras de usabilidad / modo no-interactivo
 
-### USA-01 — Flags CLI
-Pendiente. No hay forma de ejecutar sin menú interactivo.
+### ✅ USA-01 — Flags CLI
+`--help`, `--non-interactive`, `--step secure|docker|traefik|update|all`, `--env-file PATH`. Parseo en `main.sh`.
 
-### USA-02 — Variables de entorno / .env
-Pendiente. No hay soporte para preconfiguración.
+### ✅ USA-02 — Variables de entorno / .env
+`.env` file sourced en `main.sh`. `prompt_or_default()` helper en `common.sh` skip ea los prompts si la var ya está definida. `example.env` como referencia.
 
-### USA-03 — Validación DNS
-Pendiente. No se verifica resolución DNS antes de Let's Encrypt.
+### ✅ USA-03 — Validación DNS
+`dns_validate_subdomain()` en `common.sh`. Se ejecuta tras recolectar vars en `install_traefik.sh`, antes de generar configs. Advierte por subdominio y permite continuar en modo interactivo, pero bloquea en `--non-interactive`.
 
 ### USA-04 — Docs sincronizados
 ✅ Resuelto vía `PLATFORM-SUPPORT.md` como fuente de verdad.
@@ -231,9 +231,9 @@ No hay Dockerfiles propios.
 | 21 | Crear `.gitignore` | 🟡 | S | ✅ |
 | 22 | `destemail` de fail2ban configurable | 🟡 | S | ✅ |
 | 23 | Eliminar `experimental: false` de daemon.json | 🟡 | S | ✅ |
-| 24 | Validación DNS subdominios | 🟡 | M | ❌ Pendiente |
-| 25 | Flags CLI básicos (`--help`) | 🟡 | M | ❌ Pendiente |
-| 26 | Soporte `.env` para preconfiguración | 🟡 | L | ❌ Pendiente |
+| 24 | Validación DNS subdominios | 🟡 | M | ✅ |
+| 25 | Flags CLI básicos (`--help`, `--non-interactive`, `--step`, `--env-file`) | 🟡 | M | ✅ |
+| 26 | Soporte `.env` para preconfiguración | 🟡 | L | ✅ |
 | 27 | Evaluar docker-socket-proxy | 🟡 | L | ❌ Pendiente |
 | 28 | Pinear Traefik a minor explícita | 🟢 | S | ✅ |
 | 29 | CI test de integración básico | 🟢 | M | ❌ Pendiente |

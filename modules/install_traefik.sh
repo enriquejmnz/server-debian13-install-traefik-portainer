@@ -44,29 +44,65 @@ install_traefik_portainer() {
 
   trap cleanup_traefik_portainer ERR
 
-  read -r -p "Ingrese el dominio base (ejemplo: example.com): " base_domain
+  prompt_or_default "BASE_DOMAIN" "Ingrese el dominio base (ejemplo: example.com)"
+  base_domain="${BASE_DOMAIN}"
   validate_domain "$base_domain"
-  read -r -p "Ingrese el subdominio para Traefik (def: traefik): " traefik_subdomain
-  traefik_subdomain=${traefik_subdomain:-traefik}
-  read -r -p "Ingrese el subdominio para Portainer (def: portainer): " portainer_subdomain
-  portainer_subdomain=${portainer_subdomain:-portainer}
+  prompt_or_default "TRAEFIK_SUBDOMAIN" "Ingrese el subdominio para Traefik" "traefik"
+  traefik_subdomain="${TRAEFIK_SUBDOMAIN:-traefik}"
+  prompt_or_default "PORTAINER_SUBDOMAIN" "Ingrese el subdominio para Portainer" "portainer"
+  portainer_subdomain="${PORTAINER_SUBDOMAIN:-portainer}"
 
   # Bucle de validación para el correo electrónico
-  while true; do
-    read -r -p "Ingrese el correo para Let's Encrypt: " email_admin
-    if is_valid_email "$email_admin"; then
-      break
-    else
-      warn "Formato de correo electrónico inválido. Por favor, inténtelo de nuevo."
-    fi
-  done
+  if [[ -z ${EMAIL_ADMIN:-} ]]; then
+    while true; do
+      read -r -p "Ingrese el correo para Let's Encrypt: " email_admin
+      if is_valid_email "$email_admin"; then
+        break
+      else
+        warn "Formato de correo electrónico inválido. Por favor, inténtelo de nuevo."
+      fi
+    done
+  else
+    email_admin="$EMAIL_ADMIN"
+  fi
 
-  read -r -p "Ingrese el nombre de usuario para Traefik: " traefik_user
-  read -r -s -p "Ingrese la contraseña para Traefik: " traefik_password
-  echo
+  prompt_or_default "TRAEFIK_USER" "Ingrese el nombre de usuario para Traefik"
+  traefik_user="${TRAEFIK_USER}"
+  if [[ -z ${TRAEFIK_PASSWORD:-} ]]; then
+    read -r -s -p "Ingrese la contraseña para Traefik: " traefik_password
+    echo
+  else
+    traefik_password="$TRAEFIK_PASSWORD"
+  fi
   if [[ -z $traefik_user || -z $traefik_password ]]; then error "El usuario y contraseña de Traefik no pueden estar vacíos"; fi
   traefik_auth=$(htpasswd -nb "$traefik_user" "$traefik_password") || error "Error al generar autenticación para Traefik"
   unset traefik_password
+
+  # --- Validación DNS antes de continuar ---
+  log "Verificando resolución DNS de los subdominios..."
+  server_ip=$(get_public_ip)
+  if [[ -z $server_ip ]]; then
+    warn "No se pudo determinar la IP pública del servidor. Omitiendo validación DNS."
+  else
+    dns_ok=true
+    for sub in "$traefik_subdomain" "$portainer_subdomain"; do
+      fqdn="${sub}.${base_domain}"
+      if ! dns_validate_subdomain "$fqdn" "$server_ip"; then
+        dns_ok=false
+      fi
+    done
+
+    if [[ $dns_ok == false ]]; then
+      if [[ $NON_INTERACTIVE == true ]]; then
+        error "Validación DNS fallida. Configure los registros DNS antes de continuar."
+      fi
+      warn "Algunos subdominios no resuelven correctamente a la IP del servidor."
+      read -r -p "¿Desea continuar de todas formas? (s/n, predeterminado: n): " continue_dns
+      if [[ ! $continue_dns =~ ^[sS]$ ]]; then
+        error "Instalación cancelada. Configure el DNS y vuelva a ejecutar."
+      fi
+    fi
+  fi
 
   log "Configurando docker-compose.yml..."
   cat >"$INSTALL_DIR/docker-compose.yml" <<EOF

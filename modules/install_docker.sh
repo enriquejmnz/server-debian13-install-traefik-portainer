@@ -4,7 +4,8 @@
 
 configure_docker_user() {
   log "Configurando usuario para Docker..."
-  read -r -p "Ingrese el nombre de usuario que administrará Docker (dejarlo vacío para omitir): " docker_user
+  prompt_or_default "DOCKER_USER" "Ingrese el nombre de usuario que administrará Docker (dejarlo vacío para omitir)"
+  docker_user="${DOCKER_USER:-}"
 
   if [[ -z $docker_user ]]; then
     warn "No se ha especificado ningún usuario para Docker"

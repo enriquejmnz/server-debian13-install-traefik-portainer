@@ -161,6 +161,78 @@ require_supported_debian() {
   fi
 }
 
+# Función para obtener la IP pública del servidor
+get_public_ip() {
+  curl -s -4 https://ifconfig.me 2>/dev/null ||
+    curl -s -4 https://api.ipify.org 2>/dev/null ||
+    curl -s -4 https://icanhazip.com 2>/dev/null ||
+    hostname -I 2>/dev/null | awk '{print $1}'
+}
+
+# Validar que un subdominio resuelve a la IP esperada
+# Uso: dns_validate_subdomain "traefik.example.com" "203.0.113.1"
+# Devuelve 0 si coincide, 1 si no
+dns_validate_subdomain() {
+  local fqdn="$1"
+  local expected_ip="$2"
+  local resolved_ip
+
+  if command -v dig &>/dev/null; then
+    resolved_ip=$(dig +short "$fqdn" 2>/dev/null | grep -E '^[0-9.]+$' | head -1)
+  elif command -v host &>/dev/null; then
+    resolved_ip=$(host "$fqdn" 2>/dev/null | grep 'has address' | head -1 | awk '{print $NF}')
+  else
+    warn "No se encontró dig ni host. Omitiendo validación DNS para $fqdn."
+    return 0
+  fi
+
+  if [[ -z $resolved_ip ]]; then
+    warn "No se pudo resolver $fqdn"
+    return 1
+  fi
+
+  if [[ $resolved_ip != "$expected_ip" ]]; then
+    warn "$fqdn → $resolved_ip (se esperaba $expected_ip)"
+    return 1
+  fi
+
+  log "✓ DNS: $fqdn → $resolved_ip (correcto)"
+  return 0
+}
+
+# Preguntar o confirmar una variable, con soporte .env
+# Uso: prompt_or_default "VAR_NAME" "Descripción" "default_value" [--sensitive]
+# Si VAR_NAME ya está definida, la salta. Si NON_INTERACTIVE y no definida, error.
+prompt_or_default() {
+  local var_name="$1"
+  local description="$2"
+  local default_value="$3"
+  local sensitive=false
+  local user_input
+
+  if [[ ${4:-} == "--sensitive" ]]; then
+    sensitive=true
+  fi
+
+  # Ya definida via .env o export — skip
+  if [[ -n ${!var_name:-} ]]; then
+    return 0
+  fi
+
+  if [[ $NON_INTERACTIVE == true ]]; then
+    error "$var_name no definido. Requerido en modo --non-interactive."
+  fi
+
+  if $sensitive; then
+    read -r -s -p "$description: " user_input
+    echo
+  else
+    read -r -p "$description: " user_input
+  fi
+
+  printf -v "$var_name" '%s' "${user_input:-$default_value}"
+}
+
 write_log_entry() {
   local message=$1
   local target_log_file

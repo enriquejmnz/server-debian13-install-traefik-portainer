@@ -5,9 +5,12 @@ secure_server_create_admin_user() {
   log "Creando o configurando usuario administrador..."
 
   while true; do
-    read -r -p "Ingrese el nombre del usuario administrador: " admin_user
+    prompt_or_default "ADMIN_USER" "Ingrese el nombre del usuario administrador"
+    admin_user="${ADMIN_USER}"
+
     if [[ -z $admin_user ]]; then
       warn "El nombre de usuario no puede estar vacío"
+      unset ADMIN_USER
       continue
     fi
 
@@ -22,8 +25,8 @@ secure_server_create_admin_user() {
         log "Usuario $admin_user configurado como administrador y añadido a los grupos sudo y sshusers"
         break
       fi
-
       log "Por favor, ingrese un nombre de usuario diferente"
+      unset ADMIN_USER
       continue
     fi
 
@@ -45,7 +48,8 @@ secure_server_create_admin_user() {
   echo -e "    (Generala con: ${GREEN}ssh-keygen -t ed25519${NC})"
   echo ""
 
-  read -r -p "  Pegá tu clave pública SSH (dejar vacío para omitir): " admin_ssh_key
+  prompt_or_default "ADMIN_SSH_KEY" "  Pegá tu clave pública SSH (dejar vacío para omitir)"
+  admin_ssh_key="${ADMIN_SSH_KEY:-}"
 
   if [[ -n $admin_ssh_key ]]; then
     local auth_keys_dir="/home/$admin_user/.ssh"
@@ -229,14 +233,14 @@ secure_server() {
   # FASE 2 — Configuración SSH (puerto y política de contraseñas)
   # =====================================================================
   log "Paso 1/4 — Configuración de SSH..."
-  read -r -p "Ingrese el puerto SSH (presione Enter para usar 22, o especifique un puerto no estándar): " ssh_port
-  ssh_port=${ssh_port:-22}
+  prompt_or_default "SSH_PORT" "Ingrese el puerto SSH" "22"
+  ssh_port="${SSH_PORT:-22}"
   if ! [[ $ssh_port =~ ^[0-9]+$ ]] || [[ $ssh_port -lt 1 ]] || [[ $ssh_port -gt 65535 ]]; then
     error "Puerto SSH inválido: $ssh_port"
   fi
 
-  read -r -p "¿Desea deshabilitar la autenticación por contraseña para SSH? (s/n, predeterminado: s): " disable_password
-  disable_password=${disable_password:-s}
+  prompt_or_default "DISABLE_PASSWORD_AUTH" "¿Desea deshabilitar la autenticación por contraseña para SSH? (s/n)" "s"
+  disable_password="${DISABLE_PASSWORD_AUTH:-s}"
   if [[ $disable_password =~ ^[sS]$ ]]; then
     password_auth="no"
     log "Autenticación por contraseña para SSH será deshabilitada"
@@ -311,22 +315,33 @@ EOF
 
   # --- Timezone y NTP ---
   log "Configurando timezone..."
-  while true; do
-    echo ""
-    echo -e "  Zonas horarias disponibles (ejemplos):"
-    echo -e "    ${GREEN}timedatectl list-timezones${NC} — muestra todas las zonas"
-    echo -e "    America/Argentina/Buenos_Aires  America/Mexico_City  America/Santiago"
-    echo -e "    Europe/Madrid  Europe/London  Asia/Tokyo  UTC"
-    echo ""
-    read -r -p "  Ingrese la zona horaria (Enter para UTC): " timezone
-    timezone=${timezone:-UTC}
-    if timedatectl set-timezone "$timezone" 2>/dev/null; then
+  if [[ -n ${TIMEZONE:-} ]]; then
+    if timedatectl set-timezone "$TIMEZONE" 2>/dev/null; then
+      timezone="$TIMEZONE"
       log "Zona horaria configurada: $timezone"
-      break
     else
-      warn "Zona horaria \"$timezone\" no válida. Ejecutá 'timedatectl list-timezones' para ver las zonas disponibles."
+      warn "Zona horaria \"$TIMEZONE\" no válida. Usando UTC."
+      timedatectl set-timezone UTC || true
+      timezone="UTC"
     fi
-  done
+  else
+    while true; do
+      echo ""
+      echo -e "  Zonas horarias disponibles (ejemplos):"
+      echo -e "    ${GREEN}timedatectl list-timezones${NC} — muestra todas las zonas"
+      echo -e "    America/Argentina/Buenos_Aires  America/Mexico_City  America/Santiago"
+      echo -e "    Europe/Madrid  Europe/London  Asia/Tokyo  UTC"
+      echo ""
+      read -r -p "  Ingrese la zona horaria (Enter para UTC): " timezone
+      timezone=${timezone:-UTC}
+      if timedatectl set-timezone "$timezone" 2>/dev/null; then
+        log "Zona horaria configurada: $timezone"
+        break
+      else
+        warn "Zona horaria \"$timezone\" no válida. Ejecutá 'timedatectl list-timezones' para ver las zonas disponibles."
+      fi
+    done
+  fi
 
   log "Configurando NTP..."
   systemctl enable systemd-timesyncd || error "Error al habilitar systemd-timesyncd"
