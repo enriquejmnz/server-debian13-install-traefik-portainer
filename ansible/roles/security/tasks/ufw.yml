@@ -1,5 +1,13 @@
 ---
 # tasks/ufw.yml - Configurar UFW firewall
+- name: Reset UFW to clean state
+  community.general.ufw:
+    state: reset
+  ignore_errors: true
+  tags:
+    - security
+    - ufw
+
 - name: Set UFW default deny incoming policy
   community.general.ufw:
     default: deny

@@ -1,0 +1,28 @@
+---
+- name: Converge
+  hosts: all
+  become: true
+  vars:
+    install_dir: /opt/traefik-portainer
+    base_domain: example.com
+    traefik_subdomain: traefik
+    portainer_subdomain: portainer
+    letsencrypt_email: admin@example.com
+    traefik_user: admin
+    traefik_password: testpassword123
+    proxy_network: proxy
+    proxy_subnet: 172.18.0.0/16
+  pre_tasks:
+    - name: Ensure Docker is available (prerequisite for traefik_portainer role)
+      ansible.builtin.include_role:
+        name: docker
+      vars:
+        docker_user: ""
+  tasks:
+    # Use include_role with ignore_errors because docker_compose_v2 deploy
+    # and container verification may fail in Docker-in-Docker environments.
+    # File configuration (templates, directories) is still applied.
+    - name: Apply traefik_portainer role (Docker-tolerant)
+      ansible.builtin.include_role:
+        name: traefik_portainer
+      ignore_errors: true

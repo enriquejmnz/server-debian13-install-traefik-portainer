@@ -1,0 +1,12 @@
+---
+- name: Create Docker proxy network
+  community.docker.docker_network:
+    name: "{{ proxy_network }}"
+    driver: bridge
+    ipam_config:
+      - subnet: "{{ proxy_subnet }}"
+    state: present
+  tags:
+    - traefik
+    - portainer
+    - network

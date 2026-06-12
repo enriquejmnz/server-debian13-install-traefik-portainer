@@ -79,12 +79,15 @@
       changed_when: true
       register: deploy_result
 
-    - name: Prune unused images
-      ansible.builtin.shell: |
-        docker image prune -f 2>&1
-      register: prune_result
-      changed_when: "'Total reclaimed space: 0B' not in prune_result.stdout"
-      failed_when: false
+    - name: Prune unused Docker images
+      community.docker.docker_prune:
+        images: true
+        images_filters:
+          dangling: false
+      when: traefik_update_available or portainer_update_available
+      tags:
+        - update
+        - prune
 
     - name: Display deployment results
       ansible.builtin.debug:

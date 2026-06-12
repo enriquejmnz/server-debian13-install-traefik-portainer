@@ -56,9 +56,33 @@
     - "443"
   when: "'ufw' in ansible_facts.packages"
 
-- name: Start Traefik and Portainer containers
-  ansible.builtin.shell: |
-    cd "{{ install_dir }}" && docker compose up -d
-  args:
-    executable: /bin/bash
-  changed_when: false
+- name: Deploy Traefik and Portainer stack
+  community.docker.docker_compose_v2:
+    project_src: "{{ install_dir }}"
+    state: present
+    pull: missing
+  register: compose_result
+  tags:
+    - traefik
+    - portainer
+    - deploy
+
+- name: Verify Traefik container is running
+  community.docker.docker_container_info:
+    name: traefik
+  register: traefik_container
+  failed_when: not traefik_container.exists or not traefik_container.container.State.Running
+  tags:
+    - traefik
+    - portainer
+    - verify
+
+- name: Verify Portainer container is running
+  community.docker.docker_container_info:
+    name: portainer
+  register: portainer_container
+  failed_when: not portainer_container.exists or not portainer_container.container.State.Running
+  tags:
+    - traefik
+    - portainer
+    - verify

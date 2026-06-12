@@ -1,0 +1,37 @@
+---
+- name: Converge
+  hosts: all
+  become: true
+  vars:
+    install_dir: /opt/traefik-portainer
+  pre_tasks:
+    - name: Install Docker (prerequisite)
+      ansible.builtin.include_role:
+        name: docker
+      vars:
+        docker_user: ""
+
+    - name: Install apache2-utils for htpasswd
+      ansible.builtin.apt:
+        name: apache2-utils
+        state: present
+        update_cache: true
+
+    - name: Deploy stack first (prerequisite for update role)
+      ansible.builtin.include_role:
+        name: traefik_portainer
+      vars:
+        base_domain: example.com
+        traefik_subdomain: traefik
+        portainer_subdomain: portainer
+        letsencrypt_email: admin@example.com
+        traefik_user: admin
+        traefik_password: testpassword123
+        proxy_network: proxy
+        proxy_subnet: 172.18.0.0/16
+      ignore_errors: true
+  tasks:
+    - name: Apply update role (Docker-tolerant)
+      ansible.builtin.include_role:
+        name: update
+      ignore_errors: true

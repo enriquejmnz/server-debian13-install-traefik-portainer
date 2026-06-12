@@ -1,5 +1,5 @@
 ---
-# tasks/fail2ban.yml - Configurar fail2ban con backend systemd para Debian 13
+# tasks/fail2ban.yml - Configurar fail2ban para Debian 12/13
 - name: Create fail2ban jail.local from template
   ansible.builtin.template:
     src: jail.local.j2
@@ -7,7 +7,7 @@
     mode: "0644"
   notify: Restart fail2ban
 
-- name: Configure fail2ban systemd backend for Debian 13+
+- name: Configure fail2ban path override for Debian 13+
   ansible.builtin.lineinfile:
     path: /etc/fail2ban/paths-debian.conf
     line: "sshd_backend = systemd"

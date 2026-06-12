@@ -10,6 +10,7 @@ docker_packages:
   - containerd.io
   - docker-buildx-plugin
   - docker-compose-plugin
+docker_clean_install: false
 docker_old_packages:
   - docker
   - docker-engine

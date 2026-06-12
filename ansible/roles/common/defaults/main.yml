@@ -1,4 +1,12 @@
 ---
+common_supported_debian_versions:
+  - 12
+  - 13
+
+common_supported_debian_releases:
+  12: bookworm
+  13: trixie
+
 common_base_packages:
   - curl
   - gnupg

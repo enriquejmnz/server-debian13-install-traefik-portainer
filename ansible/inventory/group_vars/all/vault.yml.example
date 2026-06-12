@@ -14,4 +14,3 @@ vault_letsencrypt_email: admin@example.com
 vault_traefik_user: admin
 vault_traefik_password: CAMBIAR_ESTE_VALOR
 vault_admin_ssh_public_key: ssh-ed25519 AAAA_PLACEHOLDER usuario@equipo
-vault_admin_password_hash: CAMBIAR_HASH_SHADOW

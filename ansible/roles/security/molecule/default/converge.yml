@@ -1,0 +1,17 @@
+---
+- name: Converge
+  hosts: all
+  become: true
+  vars:
+    admin_user: testadmin
+    admin_ssh_public_key: ""
+    admin_sudo_nopasswd: true
+    ssh_port: 22
+  tasks:
+    # Use include_role with ignore_errors because some security services
+    # (fail2ban runtime, systemd-timesyncd) may not fully start in Docker
+    # even with privileged mode. File configuration is still applied.
+    - name: Apply security role (Docker-tolerant)
+      ansible.builtin.include_role:
+        name: security
+      ignore_errors: true

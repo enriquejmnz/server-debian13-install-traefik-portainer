@@ -1,5 +1,10 @@
 ---
 # tasks/ssh.yml - Configurar SSH hardening
+- name: Ensure OpenSSH server is installed
+  ansible.builtin.apt:
+    name: openssh-server
+    state: present
+
 - name: Create sshusers group
   ansible.builtin.group:
     name: sshusers
@@ -11,6 +16,7 @@
     dest: /etc/ssh/sshd_config
     mode: "0644"
     validate: "sshd -t -f %s"
+    backup: true
   notify: Restart SSH
 
 - name: Ensure sshd is running

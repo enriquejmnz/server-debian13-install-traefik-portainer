@@ -4,6 +4,10 @@
   ansible.builtin.import_tasks: prepare.yml
   tags: [traefik, portainer]
 
+- name: Include network configuration
+  ansible.builtin.import_tasks: network.yml
+  tags: [traefik, portainer, network]
+
 - name: Include installation tasks
   ansible.builtin.import_tasks: install.yml
   tags: [traefik, portainer]

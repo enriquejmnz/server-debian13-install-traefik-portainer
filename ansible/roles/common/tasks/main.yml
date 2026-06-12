@@ -1,16 +1,28 @@
 ---
-- name: Verificar que el sistema es Debian
+- name: Assert Debian is the supported OS family
   ansible.builtin.assert:
     that:
+      - ansible_os_family == "Debian"
       - ansible_distribution == "Debian"
-    fail_msg: "Este role solo soporta Debian."
+    fail_msg: >-
+      Plataforma no soportada: {{ ansible_distribution }} {{ ansible_distribution_version }}.
+      La ruta Ansible soporta solo Debian 12 (Bookworm) y Debian 13 (Trixie).
+      Ubuntu sigue sin soporte.
   tags: [common]
 
-- name: Verificar versión mínima de Debian
+- name: Assert supported Debian major version
   ansible.builtin.assert:
     that:
-      - (ansible_distribution_major_version | int) >= 12
-    fail_msg: "Se requiere Debian 12 o superior."
+      - (ansible_distribution_major_version | int) in common_supported_debian_versions
+    fail_msg: >-
+      Versión de Debian no soportada: {{ ansible_distribution_version }}.
+      La ruta Ansible soporta exactamente Debian 12 (Bookworm) y Debian 13 (Trixie).
+  tags: [common]
+
+- name: Set supported Debian release facts
+  ansible.builtin.set_fact:
+    common_debian_major_version: "{{ ansible_distribution_major_version | int }}"
+    common_debian_release: "{{ common_supported_debian_releases[ansible_distribution_major_version | int] }}"
   tags: [common]
 
 - name: Actualizar caché de apt

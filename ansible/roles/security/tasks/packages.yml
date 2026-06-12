@@ -12,6 +12,14 @@
     state: present
   failed_when: false
 
+- name: Upgrade all packages to latest version
+  ansible.builtin.apt:
+    upgrade: dist
+    update_cache: true
+  tags:
+    - security
+    - packages
+
 - name: Configure unattended-upgrades
   ansible.builtin.template:
     src: 50unattended-upgrades-custom.j2

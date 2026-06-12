@@ -1,5 +1,17 @@
 ---
 # tasks/install.yml - Instalar Docker Engine y Docker Compose
+- name: Remove Docker data directories (clean install)
+  ansible.builtin.file:
+    path: "{{ item }}"
+    state: absent
+  loop:
+    - /var/lib/docker
+    - /var/lib/containerd
+  when: docker_clean_install | bool
+  tags:
+    - docker
+    - docker-install
+
 - name: Remove old Docker packages
   ansible.builtin.apt:
     name: "{{ docker_old_packages }}"

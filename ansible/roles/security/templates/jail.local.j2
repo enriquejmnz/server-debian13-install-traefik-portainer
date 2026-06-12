@@ -12,13 +12,6 @@ backend = systemd
 enabled   = true
 port      = {{ ssh_port }}
 filter    = sshd
-maxretry  = {{ fail2ban_maxretry }}
-bantime   = {{ fail2ban_bantime }}
-findtime  = {{ fail2ban_findtime }}
-
-[sshd-systemd]
-enabled   = true
-filter    = sshd
 backend   = systemd
 maxretry  = {{ fail2ban_maxretry }}
 bantime   = {{ fail2ban_bantime }}

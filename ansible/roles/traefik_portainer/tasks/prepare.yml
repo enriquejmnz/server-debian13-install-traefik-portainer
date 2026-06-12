@@ -11,6 +11,26 @@
     msg: "Docker is not installed. Please run the docker role first."
   when: docker_check.rc != 0
 
+- name: Validate letsencrypt_email format
+  ansible.builtin.assert:
+    that:
+      - letsencrypt_email is match('^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$')
+    fail_msg: "Invalid email format: {{ letsencrypt_email }}"
+  when: letsencrypt_email | length > 0
+  tags:
+    - traefik
+    - portainer
+
+- name: Validate base_domain format
+  ansible.builtin.assert:
+    that:
+      - base_domain is match('^[a-zA-Z0-9]([a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(\.[a-zA-Z0-9]([a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*\.[a-zA-Z]{2,}$')
+    fail_msg: "Invalid domain format: {{ base_domain }}"
+  when: base_domain | length > 0
+  tags:
+    - traefik
+    - portainer
+
 - name: Create Traefik and Portainer directories
   ansible.builtin.file:
     path: "{{ item }}"
