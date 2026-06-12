@@ -194,17 +194,25 @@ EOF
 # Función para asegurar el servidor
 secure_server() {
   require_supported_debian
-  log "Iniciando configuración de seguridad del servidor..."
+
+  clear
+  printf '%s\n' "${GREEN}╔══════════════════════════════════════════════╗${NC}"
+  printf '%s\n' "${GREEN}║   CONFIGURACIÓN DE SEGURIDAD DEL SERVIDOR   ║${NC}"
+  printf '%s\n' "${GREEN}╚══════════════════════════════════════════════╝${NC}"
+  echo ""
+  log "Iniciando hardening de seguridad..."
 
   # =====================================================================
   # FASE 1 — Preparación del sistema y paquetes
   # =====================================================================
-  log "Actualizando el sistema..."
+  printf '%s\n' "${YELLOW}── FASE 1/5: Preparación del sistema${NC}"
+  echo ""
+
+  log "Actualizando el sistema (apt update + upgrade)..."
   apt-get update || error "Error al actualizar los índices de paquetes"
   apt-get upgrade -y || error "Error al actualizar el sistema"
 
-  log "Instalando herramientas esenciales..."
-
+  log "Instalando paquetes de seguridad..."
   essential_packages=(
     "ufw" "fail2ban" "unattended-upgrades" "apt-listchanges" "net-tools" "sudo"
     "htop" "curl" "wget" "gnupg" "lsb-release" "ca-certificates" "debconf"
@@ -213,46 +221,46 @@ secure_server() {
   optional_packages=("apticron")
 
   for package in "${essential_packages[@]}"; do
-    log "Instalando $package..."
-    if ! apt-get install -y "$package"; then
+    if ! apt-get install -y "$package" 2>/dev/null; then
       warn "No se pudo instalar $package, continuando..."
     fi
   done
   for package in "${optional_packages[@]}"; do
-    log "Intentando instalar $package (opcional)..."
     if apt-get install -y "$package" 2>/dev/null; then
-      log "$package instalado correctamente"
-    else
-      warn "$package no está disponible, omitiendo..."
+      log "$package instalado (opcional)"
     fi
   done
 
   command -v sshd >/dev/null 2>&1 || error "openssh-server no está disponible después de la instalación de paquetes"
+  log "✓ Sistema actualizado y paquetes instalados"
+  echo ""
 
   # =====================================================================
-  # FASE 2 — Configuración SSH (puerto y política de contraseñas)
+  # FASE 2 — SSH: puerto y política de contraseñas
   # =====================================================================
-  log "Paso 1/4 — Configuración de SSH..."
+  printf '%s\n' "${YELLOW}── FASE 2/5: Configuración de SSH${NC}"
+  echo ""
+
   prompt_or_default "SSH_PORT" "Ingrese el puerto SSH (Enter para usar 22, o especifique un puerto no estándar)" "22"
   ssh_port="${SSH_PORT:-22}"
   if ! [[ $ssh_port =~ ^[0-9]+$ ]] || [[ $ssh_port -lt 1 ]] || [[ $ssh_port -gt 65535 ]]; then
     error "Puerto SSH inválido: $ssh_port"
   fi
 
-  prompt_or_default "DISABLE_PASSWORD_AUTH" "¿Desea deshabilitar la autenticación por contraseña para SSH? (s/n, predeterminado: s)" "s"
+  prompt_or_default "DISABLE_PASSWORD_AUTH" "¿Deshabilitar autenticación por contraseña para SSH? (s/n, predeterminado: s)" "s"
   disable_password="${DISABLE_PASSWORD_AUTH:-s}"
   if [[ $disable_password =~ ^[sS]$ ]]; then
     password_auth="no"
-    log "Autenticación por contraseña para SSH será deshabilitada"
   else
     password_auth="yes"
-    log "Autenticación por contraseña para SSH permanecerá habilitada"
   fi
+  echo ""
 
   # =====================================================================
-  # FASE 3 — Usuario administrador y acceso SSH (ANTES de tocar UFW/SSH)
+  # FASE 3 — Usuario administrador (ANTES de tocar UFW/SSH)
   # =====================================================================
-  log "Paso 2/4 — Creación del usuario administrador..."
+  printf '%s\n' "${YELLOW}── FASE 3/5: Usuario administrador${NC}"
+  echo ""
 
   log "Creando grupo sshusers para acceso SSH..."
   if ! getent group sshusers >/dev/null 2>&1; then
@@ -263,14 +271,55 @@ secure_server() {
 
   admin_user=""
   secure_server_create_admin_user
+  echo ""
 
   # =====================================================================
-  # FASE 4 — Hardening (el admin ya tiene acceso garantizado)
+  # CHECKPOINT — Confirmación antes de aplicar hardening
   # =====================================================================
-  log "Paso 3/4 — Aplicando hardening del sistema..."
+  if [[ $NON_INTERACTIVE == false ]]; then
+    local pass_status
+    if [[ $password_auth == "no" ]]; then
+      pass_status="${RED}DESHABILITADA${NC}"
+    else
+      pass_status="${GREEN}HABILITADA${NC}"
+    fi
+
+    echo ""
+    printf '%s\n' "${YELLOW}╔══════════════════════════════════════════════╗${NC}"
+    printf '%s\n' "${YELLOW}║        RESUMEN PREVIO AL HARDENING          ║${NC}"
+    printf '%s\n' "${YELLOW}╚══════════════════════════════════════════════╝${NC}"
+    echo ""
+    printf '%s\n' "  Puerto SSH:              ${GREEN}${ssh_port}${NC}"
+    printf '%s\n' "  Auth por contraseña:     ${pass_status}"
+    printf '%s\n' "  Usuario administrador:   ${GREEN}${admin_user}${NC}"
+    printf '%s\n' "  Grupos del admin:        sudo + sshusers"
+    echo ""
+    printf '%s\n' "  Cambios a aplicar:"
+    printf '%s\n' "  • Firewall UFW:           solo SSH(${ssh_port}), HTTP, HTTPS"
+    printf '%s\n' "  • PermitRootLogin:        prohibit-password"
+    printf '%s\n' "  • Acceso SSH:             solo miembros del grupo sshusers"
+    printf '%s\n' "  • Fail2ban:               activo (backend systemd)"
+    printf '%s\n' "  • Actualizaciones:        automáticas (seguridad)"
+    printf '%s\n' "  • Límites del sistema:    nofile=65535, nproc=65535"
+    printf '%s\n' "  • Timezone + NTP:         sincronización horaria"
+    printf '%s\n' "  • Auditd:                 auditoría de seguridad"
+    echo ""
+
+    read -r -p "  ¿Aplicar estos cambios? (s/n, predeterminado: s): " confirm_hardening
+    confirm_hardening=${confirm_hardening:-s}
+    if [[ ! $confirm_hardening =~ ^[sS]$ ]]; then
+      log "Hardening cancelado por el usuario."
+      log "El usuario $admin_user permanece configurado. Para re-ejecutar: opción 1 del menú."
+      return 0
+    fi
+  fi
+
+  echo ""
+  printf '%s\n' "${YELLOW}── FASE 4/5: Aplicando hardening${NC}"
+  echo ""
 
   # --- UFW ---
-  log "Configurando UFW..."
+  log "Configurando firewall UFW..."
   ufw --force reset
   ufw default deny incoming || error "Error al configurar política de denegación de UFW"
   ufw default allow outgoing || error "Error al configurar política de salida de UFW"
@@ -278,6 +327,7 @@ secure_server() {
   ufw allow http || error "Error al permitir HTTP en UFW"
   ufw allow https || error "Error al permitir HTTPS en UFW"
   ufw --force enable || error "Error al habilitar UFW"
+  log "✓ UFW configurado"
 
   # --- Actualizaciones automáticas ---
   log "Configurando actualizaciones automáticas..."
@@ -290,9 +340,11 @@ EOF
   # --- SSH hardening ---
   log "Aplicando configuración hardened de SSH..."
   deploy_sshd_config "$ssh_port" "$password_auth"
+  log "✓ SSH configurado"
 
   # --- fail2ban ---
   configure_fail2ban_jail "$ssh_port"
+  log "✓ Fail2ban configurado"
 
   # --- Límites del sistema ---
   log "Configurando límites del sistema..."
@@ -312,13 +364,14 @@ EOF
 DefaultLimitNOFILE=65535
 DefaultLimitNPROC=65535
 EOF
+  log "✓ Límites del sistema configurados"
 
   # --- Timezone y NTP ---
-  log "Configurando timezone..."
+  log "Configurando timezone y NTP..."
   if [[ -n ${TIMEZONE:-} ]]; then
     if timedatectl set-timezone "$TIMEZONE" 2>/dev/null; then
       timezone="$TIMEZONE"
-      log "Zona horaria configurada: $timezone"
+      log "Zona horaria: $timezone"
     else
       warn "Zona horaria \"$TIMEZONE\" no válida. Usando UTC."
       timedatectl set-timezone UTC || true
@@ -343,37 +396,46 @@ EOF
     done
   fi
 
-  log "Configurando NTP..."
   systemctl enable systemd-timesyncd || error "Error al habilitar systemd-timesyncd"
   systemctl start systemd-timesyncd || error "Error al iniciar systemd-timesyncd"
+  log "✓ Timezone y NTP configurados"
 
   # --- Auditoría ---
   log "Configurando auditoría de seguridad..."
   systemctl enable auditd || error "Error al habilitar auditd"
   systemctl start auditd || error "Error al iniciar auditd"
+  log "✓ Auditd habilitado"
 
   # =====================================================================
-  # FASE 5 — Reinicio de servicios (acceso garantizado)
+  # FASE 5 — Reinicio de servicios
   # =====================================================================
-  log "Paso 4/4 — Aplicando configuración y reiniciando servicios..."
+  echo ""
+  printf '%s\n' "${YELLOW}── FASE 5/5: Reiniciando servicios${NC}"
+  echo ""
 
   systemctl enable fail2ban || error "Error al habilitar fail2ban"
   systemctl restart fail2ban || error "Error al reiniciar fail2ban"
+  log "✓ Fail2ban iniciado"
+
   sshd -t || error "Error en la configuración de SSH. No se reiniciará el servicio"
   systemctl restart ssh || error "Error al reiniciar ssh"
+  log "✓ SSH reiniciado"
 
   # =====================================================================
   # Resumen final
   # =====================================================================
-  log "Configuración de seguridad completada con éxito"
-  log "Resumen de cambios aplicados:"
-  log "  - SSH root login deshabilitado"
-  log "  - Autenticación por contraseña: $password_auth"
-  log "  - Puerto SSH configurado: $ssh_port"
-  log "  - Firewall UFW activo: solo SSH, HTTP y HTTPS"
-  log "  - Fail2ban activo con backend systemd (Debian 12/13)"
-  log "  - Actualizaciones automáticas configuradas"
-  log "  - Usuario administrador: $admin_user (grupos sudo + sshusers)"
-  log "  - Solo miembros del grupo 'sshusers' pueden acceder vía SSH"
-  log "  - Timezone $timezone, NTP y auditd habilitados"
+  echo ""
+  printf '%s\n' "${GREEN}╔══════════════════════════════════════════════╗${NC}"
+  printf '%s\n' "${GREEN}║      HARDENING COMPLETADO CON ÉXITO         ║${NC}"
+  printf '%s\n' "${GREEN}╚══════════════════════════════════════════════╝${NC}"
+  echo ""
+  printf '%s\n' "  🔒 SSH:                    puerto ${GREEN}${ssh_port}${NC}, contraseña ${password_auth}"
+  printf '%s\n' "  👤 Usuario admin:          ${GREEN}${admin_user}${NC} (sudo + sshusers)"
+  printf '%s\n' "  🛡️  Firewall:               solo SSH(${ssh_port}), HTTP, HTTPS"
+  printf '%s\n' "  🚫 Fail2ban:               activo (backend systemd)"
+  printf '%s\n' "  📦 Actualizaciones:        automáticas (seguridad)"
+  printf '%s\n' "  ⏰ Timezone:               ${timezone:-UTC}"
+  printf '%s\n' "  📋 Auditd:                 habilitado"
+  echo ""
+  log "Hardening de seguridad completado con éxito"
 }
