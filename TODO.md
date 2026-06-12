@@ -264,7 +264,7 @@ Tareas para implementar el módulo de backup y restauración del stack Traefik +
 
 | # | Tarea | Prio | Esfuerzo | Estado |
 |---|---|---|---|---|
-| 31 | Crear `modules/backup_restore.sh` con `backup_stack()` y `restore_stack()` | 🟡 | M | ❌ Pendiente |
+| 31 | Crear `modules/backup_restore.sh` con `backup_stack()` y `restore_stack()` | 🟡 | M | ✅ |
 | 32 | Integrar en `main.sh`: menú (opción 7) y CLI (`--step backup`, `--step restore`) | 🟡 | S | ❌ Pendiente |
 | 33 | Validación de archivos, permisos restrictivos post-extracción y cambio de dominio opcional | 🟡 | M | ❌ Pendiente |
 | 34 | Actualizar documentación (`README.md`, `AGENTS.md`, `NOTES.md`) | 🟢 | S | ❌ Pendiente |
