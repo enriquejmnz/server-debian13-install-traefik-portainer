@@ -66,6 +66,13 @@ update_traefik_portainer() {
       TRAEFIK_IMAGE="traefik:${TRAEFIK_VERSION}"
       PORTAINER_IMAGE="portainer/portainer-ce:${PORTAINER_VERSION}"
     fi
+
+    # Actualizar las imágenes en docker-compose.yml para aplicar el cambio de versión
+    if [[ -f "$INSTALL_DIR/docker-compose.yml" ]]; then
+      sed -i "s|image: traefik:.*|image: ${TRAEFIK_IMAGE}|" "$INSTALL_DIR/docker-compose.yml"
+      sed -i "s|image: portainer/portainer-ce:.*|image: ${PORTAINER_IMAGE}|" "$INSTALL_DIR/docker-compose.yml"
+      log "docker-compose.yml actualizado con las versiones: ${TRAEFIK_IMAGE} y ${PORTAINER_IMAGE}"
+    fi
     echo ""
   fi
 
