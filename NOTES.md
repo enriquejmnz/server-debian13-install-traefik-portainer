@@ -55,3 +55,18 @@ Analizar estas notas para generar propuestas de mejora, identificar riesgos pote
 
         Implementado en modules/install_traefik.sh: bucle while true con segundo ingreso y comparación.
 
+- [ ] **Reordenar opciones del menú principal**
+  - Mover la opción de instalación completa en secuencia a la posición 4
+  - Mover la opción de búsqueda de parches a la posición 5
+  - Evaluar el impacto en `process_choice()` y en la documentación de referencia de opciones
+
+- [ ] **Aclarar alcance de la opción 3 (instalar Traefik y Portainer)**
+  - Agregar texto descriptivo que indique que es para instalación limpia
+  - Si el usuario ya tiene un backup, debe ir directo a la opción de restauración sin pasar por aquí
+  - Revisar banner introductorio de `install_traefik.sh` para incluir esta nota
+
+- [ ] **Persistencia de servicios Traefik y Portainer tras reinicio del VPS**
+  - Verificar que tras un `reboot` los contenedores arranquen automáticamente
+  - Confirmar que la política `restart: unless-stopped` está aplicada en el `docker-compose.yml`
+  - Comprobar que no haya errores de orden de arranque (Traefik antes que Portainer, red `proxy` disponible, etc.)
+
