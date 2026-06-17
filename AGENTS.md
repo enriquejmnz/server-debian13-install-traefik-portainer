@@ -451,7 +451,12 @@ Tabla completa de todas las variables configurables del proyecto:
 | `fail2ban_bantime` | No | `3600` (segundos) | Tiempo de ban en fail2ban | Hardcoded en `secure_server.sh` | `vars.yml` |
 | `fail2ban_maxretry` | No | `3` | Intentos máximos antes de ban (jail SSH) | Hardcoded en `secure_server.sh` | `vars.yml` |
 | `proxy_subnet` | No | `172.18.0.0/16` | Subnet de la red Docker "proxy" | Hardcoded en `install_traefik.sh` | `vars.yml` |
-| `DOCKER_CLEAN_INSTALL` / `docker_clean_install` | No | `false` | Remove /var/lib/docker and /var/lib/containerd on Docker install | Not in Bash | `install.yml` |
+| `BACKUP_FILE` | No (Sí en `--step restore`) | — | Ruta al archivo `.tar.gz` de backup para restaurar | `backup_restore.sh` (read) | N/A |
+| `NEW_BASE_DOMAIN` | No | — | Nuevo dominio base al restaurar el stack en otro dominio | `backup_restore.sh` (read) | N/A |
+| `NEW_TRAEFIK_SUBDOMAIN` | No | `traefik` | Nuevo subdominio para Traefik durante restore | `backup_restore.sh` (read) | N/A |
+| `NEW_PORTAINER_SUBDOMAIN` | No | `portainer` | Nuevo subdominio para Portainer durante restore | `backup_restore.sh` (read) | N/A |
+| `NEW_LETSENCRYPT_EMAIL` | No | — | Nuevo email de Let's Encrypt durante restore | `backup_restore.sh` (read) | N/A |
+| `FORCE_NEW_ACME` | No | `false` | Renombrar `acme.json` para forzar nuevos certificados al cambiar de dominio | `backup_restore.sh` (read) | N/A |
 
 **Nota sobre versiones**: Las versiones de Traefik y Portainer se definen en `modules/versions.env` (Bash) y `ansible/inventory/group_vars/all/versions.env` (Ansible). Cada sistema tiene su propio archivo. Para cambiar de versión sin editar archivos manualmente, la opción 5 del menú (parches) pregunta interactivamente y escribe en `versions.env`. El modo `--non-interactive` requiere editar el archivo `.env` o `versions.env` directamente antes de ejecutar.
 

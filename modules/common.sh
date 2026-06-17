@@ -200,6 +200,38 @@ dns_validate_subdomain() {
   return 0
 }
 
+# Valida que una lista de FQDNs resuelvan a la IP pública del servidor.
+# En modo no interactivo falla si hay errores; en interactivo pregunta para continuar.
+# Uso: validate_dns_for_fqdns "traefik.example.com" "portainer.example.com"
+validate_dns_for_fqdns() {
+  local server_ip
+  server_ip=$(get_public_ip)
+  if [[ -z $server_ip ]]; then
+    warn "No se pudo determinar la IP pública del servidor. Omitiendo validación DNS."
+    return 0
+  fi
+
+  local dns_ok=true
+  local fqdn
+  for fqdn in "$@"; do
+    if ! dns_validate_subdomain "$fqdn" "$server_ip"; then
+      dns_ok=false
+    fi
+  done
+
+  if [[ $dns_ok == false ]]; then
+    if [[ $NON_INTERACTIVE == true ]]; then
+      error "Validación DNS fallida. Configure los registros DNS antes de continuar."
+    fi
+    warn "Algunos subdominios no resuelven correctamente a la IP del servidor."
+    local continue_dns="n"
+    read -r -p "¿Desea continuar de todas formas? (s/n, predeterminado: n): " continue_dns
+    if [[ ! $continue_dns =~ ^[sS]$ ]]; then
+      error "Operación cancelada. Configure el DNS y vuelva a ejecutar."
+    fi
+  fi
+}
+
 # Preguntar o confirmar una variable, con soporte .env
 # Uso: prompt_or_default "VAR_NAME" "Descripción" ["default_value"] [--sensitive]
 # Si VAR_NAME ya está definida, la salta. Si NON_INTERACTIVE y no definida, error.

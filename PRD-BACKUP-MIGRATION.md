@@ -115,7 +115,7 @@ sudo bash main.sh --non-interactive --step restore --backup-file /ruta/al/backup
 
 1. **Consistencia de datos**: Se detienen los contenedores (`docker compose stop`) antes de empaquetar para evitar que `portainer.db` o `acme.json` queden en estado de escritura (locked).
 2. **Permisos**: El script de restore **debe** re-aplicar los permisos restrictivos (`chmod 750` en el directorio, `600` en `acme.json` y `dynamic.yml`), ya que `tar` puede no preservarlos correctamente dependiendo de cómo se haya creado el archivo.
-3. **Cambio de dominio**: Si el usuario migra a un nuevo dominio, el script de restore debe preguntar: *"¿Desea actualizar el dominio base en las configuraciones?"*. Si dice que sí, ejecuta un `sed -i` sobre `traefik.yml` y `docker-compose.yml` antes de levantar los contenedores.
+3. **Cambio de dominio**: Si el usuario migra a un nuevo dominio, el script de restore detecta el dominio actual desde `docker-compose.yml`, pregunta (o lee variables de entorno en modo `--non-interactive`) y actualiza las reglas `Host()` del compose. También permite cambiar el email de Let's Encrypt y forzar la emisión de nuevos certificados renombrando `acme.json`. Finalmente valida DNS del nuevo dominio antes de levantar los contenedores.
 4. **Espacio en disco**: Verificar que haya al menos 2x el tamaño del `$INSTALL_DIR` libre en el disco antes de crear el backup.
 
 ---

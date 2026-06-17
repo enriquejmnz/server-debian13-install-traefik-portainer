@@ -115,6 +115,11 @@ sudo bash main.sh --non-interactive --step verify            # Diagnóstico del 
 sudo bash main.sh --non-interactive --step post-reboot       # Smoke test del stack tras un reboot
 sudo bash main.sh --non-interactive --step backup            # Crear backup del stack
 sudo bash main.sh --non-interactive --step restore           # Restaurar stack (requiere BACKUP_FILE)
+
+# Restaurar con cambio de dominio (migración a nuevo dominio):
+sudo BACKUP_FILE=/tmp/backup.tar.gz NEW_BASE_DOMAIN=nuevodominio.com \
+  NEW_TRAEFIK_SUBDOMAIN=traefik NEW_PORTAINER_SUBDOMAIN=portainer \
+  FORCE_NEW_ACME=true bash main.sh --non-interactive --step restore
 sudo bash main.sh --non-interactive --step all               # Todo
 sudo bash main.sh --non-interactive --step all --env-file .env  # Con .env personalizado
 ```

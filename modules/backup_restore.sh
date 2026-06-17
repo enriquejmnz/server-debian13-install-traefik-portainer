@@ -53,6 +53,143 @@ backup_stack() {
   log "Backup finalizado."
 }
 
+# Extrae el FQDN de una regla Host() de Traefik en docker-compose.yml
+# Uso: restore_extract_fqdn /opt/traefik-portainer/docker-compose.yml traefik-secure
+restore_extract_fqdn() {
+  local compose_file="$1"
+  local router_name="$2"
+  local rule
+
+  rule=$(grep -E "traefik\.http\.routers\.${router_name}\.rule=Host\(" "$compose_file" 2>/dev/null | head -1)
+  if [[ -z $rule ]]; then
+    return 1
+  fi
+  # shellcheck disable=SC2016
+  printf '%s' "$rule" | sed -E 's/.*Host\(`([^`]+)`\).*/\1/'
+}
+
+# Separa un FQDN en subdominio y dominio base (asume subdominio de un solo segmento)
+# Uso: read -r sub domain < <(restore_split_fqdn traefik.example.com)
+restore_split_fqdn() {
+  local fqdn="$1"
+  local subdomain domain
+
+  subdomain=$(printf '%s' "$fqdn" | cut -d. -f1)
+  domain=$(printf '%s' "$fqdn" | cut -d. -f2-)
+  printf '%s %s' "$subdomain" "$domain"
+}
+
+# Pregunta (interactivo) o lee variables de entorno (no interactivo) para el cambio de dominio.
+# Guarda los resultados en variables RESTORE_*.
+restore_prompt_domain_change() {
+  local current_traefik_fqdn="$1"
+  local current_portainer_fqdn="$2"
+  local current_email="$3"
+
+  local current_traefik_subdomain current_traefik_domain
+  local current_portainer_subdomain current_portainer_domain
+  read -r current_traefik_subdomain current_traefik_domain < <(restore_split_fqdn "$current_traefik_fqdn")
+  read -r current_portainer_subdomain current_portainer_domain < <(restore_split_fqdn "$current_portainer_fqdn")
+
+  local change_domain="n"
+  local new_base_domain="$current_traefik_domain"
+  local new_traefik_subdomain="$current_traefik_subdomain"
+  local new_portainer_subdomain="$current_portainer_subdomain"
+  local new_email="$current_email"
+  local force_new_acme="n"
+
+  if [[ $NON_INTERACTIVE == true ]]; then
+    if [[ -n ${NEW_BASE_DOMAIN:-} ]]; then
+      change_domain="s"
+      new_base_domain="$NEW_BASE_DOMAIN"
+      new_traefik_subdomain="${NEW_TRAEFIK_SUBDOMAIN:-$current_traefik_subdomain}"
+      new_portainer_subdomain="${NEW_PORTAINER_SUBDOMAIN:-$current_portainer_subdomain}"
+    fi
+    new_email="${NEW_LETSENCRYPT_EMAIL:-$current_email}"
+    force_new_acme="${FORCE_NEW_ACME:-n}"
+  else
+    echo ""
+    printf '%s\n' "  Dominio actual detectado:"
+    printf '%s\n' "    Traefik:   ${GREEN}$current_traefik_fqdn${NC}"
+    printf '%s\n' "    Portainer: ${GREEN}$current_portainer_fqdn${NC}"
+    printf '%s\n' "    Email LE:  ${GREEN}$current_email${NC}"
+    echo ""
+
+    read -r -p "  ¿Desea cambiar el dominio base del stack? (s/n, predeterminado: n): " change_domain
+    if [[ $change_domain =~ ^[sS]$ ]]; then
+      while true; do
+        read -r -p "  Nuevo dominio base (ejemplo: nuevodominio.com): " new_base_domain
+        if [[ $new_base_domain =~ ^[A-Za-z0-9.-]+\.[A-Za-z]{2,}$ ]]; then
+          break
+        else
+          warn "Dominio inválido. Inténtelo de nuevo."
+        fi
+      done
+
+      read -r -p "  Nuevo subdominio para Traefik (predeterminado: $current_traefik_subdomain): " new_traefik_subdomain
+      new_traefik_subdomain="${new_traefik_subdomain:-$current_traefik_subdomain}"
+
+      read -r -p "  Nuevo subdominio para Portainer (predeterminado: $current_portainer_subdomain): " new_portainer_subdomain
+      new_portainer_subdomain="${new_portainer_subdomain:-$current_portainer_subdomain}"
+    fi
+
+    read -r -p "  ¿Cambiar el email de Let's Encrypt? (s/n, predeterminado: n): " change_email
+    if [[ ${change_email:-n} =~ ^[sS]$ ]]; then
+      while true; do
+        read -r -p "  Nuevo email para Let's Encrypt: " new_email
+        if is_valid_email "$new_email"; then
+          break
+        else
+          warn "Email inválido. Inténtelo de nuevo."
+        fi
+      done
+    fi
+
+    if [[ $change_domain =~ ^[sS]$ ]]; then
+      read -r -p "  ¿Forzar nueva emisión de certificados? (recomendado, s/n, predeterminado: n): " force_new_acme
+    fi
+  fi
+
+  RESTORE_NEW_TRAEFIK_FQDN="${new_traefik_subdomain}.${new_base_domain}"
+  RESTORE_NEW_PORTAINER_FQDN="${new_portainer_subdomain}.${new_base_domain}"
+  RESTORE_NEW_EMAIL="$new_email"
+  RESTORE_FORCE_NEW_ACME="$force_new_acme"
+}
+
+# Aplica el cambio de dominio y email en los archivos de configuración del stack.
+restore_apply_domain_change() {
+  local compose_file="$1"
+  local traefik_file="$2"
+  local acme_file="$3"
+  local old_traefik_fqdn="$4"
+  local old_portainer_fqdn="$5"
+  local old_email="$6"
+
+  if [[ $RESTORE_NEW_TRAEFIK_FQDN != "$old_traefik_fqdn" ]]; then
+    sed -i "s|${old_traefik_fqdn}|${RESTORE_NEW_TRAEFIK_FQDN}|g" "$compose_file" || error "Error al actualizar el dominio de Traefik en docker-compose.yml"
+    log "Dominio de Traefik actualizado: $old_traefik_fqdn → $RESTORE_NEW_TRAEFIK_FQDN"
+  fi
+
+  if [[ $RESTORE_NEW_PORTAINER_FQDN != "$old_portainer_fqdn" ]]; then
+    sed -i "s|${old_portainer_fqdn}|${RESTORE_NEW_PORTAINER_FQDN}|g" "$compose_file" || error "Error al actualizar el dominio de Portainer en docker-compose.yml"
+    log "Dominio de Portainer actualizado: $old_portainer_fqdn → $RESTORE_NEW_PORTAINER_FQDN"
+  fi
+
+  if [[ $RESTORE_NEW_EMAIL != "$old_email" && -f $traefik_file ]]; then
+    sed -i "s|email: ${old_email}|email: ${RESTORE_NEW_EMAIL}|g" "$traefik_file" || error "Error al actualizar el email en traefik.yml"
+    log "Email de Let's Encrypt actualizado: $old_email → $RESTORE_NEW_EMAIL"
+  fi
+
+  if [[ $RESTORE_FORCE_NEW_ACME =~ ^[sS]$ || $RESTORE_FORCE_NEW_ACME == "true" ]]; then
+    if [[ -f $acme_file ]]; then
+      local acme_backup
+      acme_backup="${acme_file}.old-domain.$(date +%Y%m%d_%H%M%S)"
+      mv "$acme_file" "$acme_backup" || error "Error al respaldar acme.json"
+      log "Certificados antiguos respaldados en $acme_backup"
+    fi
+  fi
+}
+
 restore_stack() {
   require_supported_debian
   if ! command -v docker &>/dev/null; then
@@ -110,6 +247,31 @@ restore_stack() {
   chmod 600 "$INSTALL_DIR/traefik-data/acme.json" 2>/dev/null || true
   chmod 600 "$INSTALL_DIR/traefik-data/configurations/dynamic.yml" 2>/dev/null || true
 
+  if [[ ! -f "$INSTALL_DIR/docker-compose.yml" ]]; then
+    error "El backup no contiene un docker-compose.yml válido."
+  fi
+
+  local compose_file="$INSTALL_DIR/docker-compose.yml"
+  local traefik_file="$INSTALL_DIR/traefik-data/traefik.yml"
+  local acme_file="$INSTALL_DIR/traefik-data/acme.json"
+
+  local current_traefik_fqdn
+  local current_portainer_fqdn
+  current_traefik_fqdn=$(restore_extract_fqdn "$compose_file" "traefik-secure") || error "No se pudo detectar el dominio actual de Traefik en docker-compose.yml"
+  current_portainer_fqdn=$(restore_extract_fqdn "$compose_file" "portainer-secure") || error "No se pudo detectar el dominio actual de Portainer en docker-compose.yml"
+
+  local current_email=""
+  if [[ -f $traefik_file ]]; then
+    current_email=$(grep -E '^\s*email:\s*' "$traefik_file" | head -1 | sed -E 's/^\s*email:\s*//')
+  fi
+
+  # Solicitar cambio de dominio opcional
+  restore_prompt_domain_change "$current_traefik_fqdn" "$current_portainer_fqdn" "$current_email"
+  restore_apply_domain_change "$compose_file" "$traefik_file" "$acme_file" "$current_traefik_fqdn" "$current_portainer_fqdn" "$current_email"
+
+  # Validar DNS del dominio resultante
+  validate_dns_for_fqdns "$RESTORE_NEW_TRAEFIK_FQDN" "$RESTORE_NEW_PORTAINER_FQDN"
+
   log "Iniciando contenedores..."
   (cd "$INSTALL_DIR" && docker compose up -d) || error "Error al iniciar contenedores"
 
@@ -125,8 +287,8 @@ restore_stack() {
   printf '%s\n' "${GREEN}╚══════════════════════════════════════════════╝${NC}"
   echo ""
   if [[ $traefik_status == "running" && $portainer_status == "running" ]]; then
-    printf '%s\n' "  ✅ Traefik:   corriendo"
-    printf '%s\n' "  ✅ Portainer: corriendo"
+    printf '%s\n' "  ✅ Traefik:   ${GREEN}https://$RESTORE_NEW_TRAEFIK_FQDN${NC}"
+    printf '%s\n' "  ✅ Portainer: ${GREEN}https://$RESTORE_NEW_PORTAINER_FQDN${NC}"
     printf '%s\n' "  💾 Backup anterior guardado en: ${YELLOW}$pre_restore_backup${NC}"
   else
     printf '%s\n' "  ⚠️  Advertencia: Algunos contenedores no iniciaron correctamente."
