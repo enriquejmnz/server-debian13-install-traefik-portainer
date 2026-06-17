@@ -86,16 +86,21 @@ El menú interactivo ofrece las siguientes opciones:
      Docker Engine · daemon.json · usuario
   3) Instalar Traefik y Portainer
      Reverse proxy · TLS automático · dashboard
-  4) Buscar parches de seguridad
-     Traefik + Portainer · cambio de versión
-  5) Instalación completa en secuencia
+  4) Instalación completa en secuencia
      Ejecuta opciones 1 → 2 → 3
+  5) Buscar parches de seguridad
+     Traefik + Portainer · cambio de versión
   6) Verificar estado del sistema
      SSH · UFW · Docker · Traefik · recursos
   7) Backup y Migración del stack
      Exportar o importar Traefik + Portainer
   8) Salir
 ```
+
+La opción 6 abre un sub-menú con dos chequeos:
+
+- **Chequeo general**: snapshot instantáneo de todos los servicios.
+- **Verificación post-reinicio**: smoke test que espera hasta 60s a que el stack esté `running/healthy` tras un `reboot` del VPS.
 
 Cada opción arranca con un banner descriptivo, una pausa con "Presione Enter (Ctrl+C para cancelar)", y finaliza con un resumen visual de lo aplicado. La opción 1 (hardening) tiene además un checkpoint previo donde podés revisar el resumen de cambios antes de aplicar nada irreversible.
 
@@ -107,6 +112,7 @@ sudo bash main.sh --non-interactive --step secure            # Solo hardening
 sudo bash main.sh --non-interactive --step docker            # Solo Docker
 sudo bash main.sh --non-interactive --step traefik           # Solo Traefik+Portainer
 sudo bash main.sh --non-interactive --step verify            # Diagnóstico del sistema
+sudo bash main.sh --non-interactive --step post-reboot       # Smoke test del stack tras un reboot
 sudo bash main.sh --non-interactive --step backup            # Crear backup del stack
 sudo bash main.sh --non-interactive --step restore           # Restaurar stack (requiere BACKUP_FILE)
 sudo bash main.sh --non-interactive --step all               # Todo
@@ -116,6 +122,10 @@ sudo bash main.sh --non-interactive --step all --env-file .env  # Con .env perso
 Copiar [`example.env`](example.env) a `.env` y ajustar las variables requeridas.
 
 **Validación DNS**: antes de instalar Traefik, el script verifica que los subdominios resuelvan a la IP del servidor. En modo interactivo permite continuar si DNS aún se está propagando; en `--non-interactive` bloquea si falla.
+
+### Healthcheck y arranque ordenado
+
+El `docker-compose.yml` generado configura **Traefik con healthcheck** (`traefik healthcheck`, cada 10s) y **Portainer con `depends_on: service_healthy`**. Esto garantiza que, tras un `reboot` del VPS, Portainer solo arranque cuando Traefik esté realmente respondiendo — sin ventanas de proxy caído ni errores 502/504. La opción `--step post-reboot` (o sub-opción 2 dentro de la opción 6) automatiza la verificación de este flujo.
 ```
 
 ---
@@ -205,7 +215,7 @@ ansible-vault view ansible/inventory/group_vars/all/vault.yml --vault-password-f
 
 | Necesidad | Usá |
 |-----------|-----|
-| Instalar en 1 server desde consola | `sudo bash main.sh` → opción 5 |
+| Instalar en 1 server desde consola | `sudo bash main.sh` → opción 4 |
 | Instalar en N servers | `ansible-playbook site.yml` |
 | Ver qué cambiaría sin aplicar | `ansible-playbook ... --check --diff` |
 | Solo tocar SSH/UFW/fail2ban | `--tags ssh` / `--tags ufw` / `--tags fail2ban` |
@@ -281,7 +291,7 @@ server-debian13-install-traefik-portainer/
 | `portainer_image` | Derivada de `modules/versions.env` | Imagen Docker de Portainer construida desde la versión canónica |
 | `install_dir` | `/opt/traefik-portainer` | Directorio de instalación del stack |
 
-Las versiones de Traefik y Portainer viven en `modules/versions.env` (Bash) y `ansible/inventory/group_vars/all/versions.env` (Ansible). Cada sistema tiene su propio archivo — ambos se actualizan manualmente al cambiar de versión. La opción 4 del menú (update) y el playbook `update.yml` **no buscan nuevas versiones**, solo verifican si el digest de la imagen pinada cambió (útil para security patches de la misma versión).
+Las versiones de Traefik y Portainer viven en `modules/versions.env` (Bash) y `ansible/inventory/group_vars/all/versions.env` (Ansible). Cada sistema tiene su propio archivo — ambos se actualizan manualmente al cambiar de versión. La opción 5 del menú (parches) y el playbook `update.yml` **no buscan nuevas versiones**, solo verifican si el digest de la imagen pinada cambió (útil para security patches de la misma versión).
 
 Consulta [AGENTS.md](AGENTS.md#6-variables-de-entorno-y-secrets) para la tabla completa de variables.
 

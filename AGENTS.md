@@ -110,9 +110,9 @@ main.sh
               ├── 1 → secure_server()
               ├── 2 → install_docker()
               ├── 3 → install_traefik_portainer()
-              ├── 4 → update_traefik_portainer()   (cambio de versión + parches + backup DB)
-              ├── 5 → secure_server + install_docker + install_traefik_portainer
-              ├── 6 → verify_services()              (diagnóstico del sistema)
+              ├── 4 → secure_server + install_docker + install_traefik_portainer   (instalación completa en secuencia)
+              ├── 5 → update_traefik_portainer()   (cambio de versión + parches + backup DB)
+              ├── 6 → verify_services()              (sub-menú: verify_general / verify_post_reboot)
               ├── 7 → backup_restore_menu()          (backup y migración del stack)
               └── 8 → exit
 ```
@@ -222,7 +222,7 @@ sudo bash main.sh --non-interactive --step secure
 sudo bash main.sh --non-interactive --step all --env-file /ruta/.env
 ```
 
-Pasos disponibles: `secure`, `docker`, `traefik`, `update`, `verify`, `backup`, `restore`, `all`.
+Pasos disponibles: `secure`, `docker`, `traefik`, `update`, `verify`, `post-reboot`, `backup`, `restore`, `all`.
 
 En modo `--non-interactive`, si falta una variable requerida el script falla con un mensaje claro. Ver [`example.env`](example.env) para la lista completa de variables.
 
@@ -453,7 +453,7 @@ Tabla completa de todas las variables configurables del proyecto:
 | `proxy_subnet` | No | `172.18.0.0/16` | Subnet de la red Docker "proxy" | Hardcoded en `install_traefik.sh` | `vars.yml` |
 | `DOCKER_CLEAN_INSTALL` / `docker_clean_install` | No | `false` | Remove /var/lib/docker and /var/lib/containerd on Docker install | Not in Bash | `install.yml` |
 
-**Nota sobre versiones**: Las versiones de Traefik y Portainer se definen en `modules/versions.env` (Bash) y `ansible/inventory/group_vars/all/versions.env` (Ansible). Cada sistema tiene su propio archivo. Para cambiar de versión sin editar archivos manualmente, la opción 4 del menú (update) pregunta interactivamente y escribe en `versions.env`. El modo `--non-interactive` requiere editar el archivo `.env` o `versions.env` directamente antes de ejecutar.
+**Nota sobre versiones**: Las versiones de Traefik y Portainer se definen en `modules/versions.env` (Bash) y `ansible/inventory/group_vars/all/versions.env` (Ansible). Cada sistema tiene su propio archivo. Para cambiar de versión sin editar archivos manualmente, la opción 5 del menú (parches) pregunta interactivamente y escribe en `versions.env`. El modo `--non-interactive` requiere editar el archivo `.env` o `versions.env` directamente antes de ejecutar.
 
 ---
 
@@ -533,8 +533,9 @@ ansible-playbook ansible/playbooks/site.yml --syntax-check
 | Solo hardening | `sudo bash main.sh` → opción 1 | `ansible-playbook ansible/playbooks/hardening.yml --ask-vault-pass` |
 | Solo Docker | `sudo bash main.sh` → opción 2 | `ansible-playbook ansible/playbooks/docker.yml` |
 | Solo Traefik + Portainer | `sudo bash main.sh` → opción 3 | `ansible-playbook ansible/playbooks/traefik_portainer.yml --ask-vault-pass` |
-| Actualizar contenedores (parches de seguridad, cambio de versión) | `sudo bash main.sh` → opción 4 | `ansible-playbook ansible/playbooks/update.yml` |
+| Actualizar contenedores (parches de seguridad, cambio de versión) | `sudo bash main.sh` → opción 5 | `ansible-playbook ansible/playbooks/update.yml` |
 | Diagnóstico del sistema | `sudo bash main.sh` → opción 6 | — |
+| Verificación post-reinicio (smoke test del stack) | `sudo bash main.sh --non-interactive --step post-reboot` | — |
 | Backup del stack actual | `sudo bash main.sh` → opción 7 | — |
 | Restaurar stack desde archivo | `sudo bash main.sh --non-interactive --step restore --env-file .env` | — |
 | Solo hardening (CLI) | `sudo bash main.sh --non-interactive --step secure --env-file .env` | — |
@@ -638,7 +639,13 @@ curl -I https://portainer.midominio.com
 
 # Verificar certificados TLS:
 openssl s_client -connect traefik.midominio.com:443 -brief 2>/dev/null | head -5
+
+# Verificación post-reinicio del VPS (espera hasta 60s a que el stack esté listo):
+sudo bash main.sh --non-interactive --step post-reboot
+# o desde el menú: opción 6 → opción 2 "Verificación post-reinicio"
 ```
+
+La verificación post-reinicio espera a que el daemon Docker esté activo y luego sondea el estado de los contenedores Traefik y Portainer hasta que ambos estén `running` (con healthcheck `healthy` si está definido). Reporta también si las reglas UFW 80/443 siguen presentes tras el reboot.
 
 ---
 

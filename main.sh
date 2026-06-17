@@ -80,7 +80,7 @@ Opciones:
   --help, -h              Muestra esta ayuda
   --non-interactive       Modo no interactivo (requiere .env)
   --step PASO             Ejecuta un paso específico y sale
-                          Valores: secure, docker, traefik, update, verify, backup, restore, all
+                          Valores: secure, docker, traefik, update, verify, post-reboot, backup, restore, all
   --env-file ARCHIVO      Ruta al archivo .env (defecto: ./.env)
 EOF
 }
@@ -124,6 +124,7 @@ if [[ -n $STEP ]]; then
   traefik) install_traefik_portainer ;;
   update) update_traefik_portainer ;;
   verify) verify_services ;;
+  post-reboot) verify_post_reboot ;;
   backup) backup_stack ;;
   restore) restore_stack ;;
   all)
@@ -131,7 +132,7 @@ if [[ -n $STEP ]]; then
     install_docker
     install_traefik_portainer
     ;;
-  *) error "Paso desconocido: $STEP. Valores: secure, docker, traefik, update, verify, backup, restore, all" ;;
+  *) error "Paso desconocido: $STEP. Valores: secure, docker, traefik, update, verify, post-reboot, backup, restore, all" ;;
   esac
   exit 0
 fi
@@ -152,11 +153,11 @@ show_menu() {
   printf '%s\n' "  ${GREEN}3${NC}) Instalar Traefik y Portainer"
   printf '%s\n' "       Reverse proxy · TLS automático · dashboard"
   echo ""
-  printf '%s\n' "  ${GREEN}4${NC}) Buscar parches de seguridad"
-  printf '%s\n' "       Traefik + Portainer · cambio de versión"
-  echo ""
-  printf '%s\n' "  ${GREEN}5${NC}) Instalación completa en secuencia"
+  printf '%s\n' "  ${GREEN}4${NC}) Instalación completa en secuencia"
   printf '%s\n' "       Ejecuta opciones 1 → 2 → 3"
+  echo ""
+  printf '%s\n' "  ${GREEN}5${NC}) Buscar parches de seguridad"
+  printf '%s\n' "       Traefik + Portainer · cambio de versión"
   echo ""
   printf '%s\n' "  ${GREEN}6${NC}) Verificar estado del sistema"
   printf '%s\n' "       SSH · UFW · Docker · Traefik · recursos"
@@ -189,16 +190,29 @@ process_choice() {
     read -r
     ;;
   4)
-    update_traefik_portainer
-    log "Presione Enter para volver al menú..."
-    read -r
-    ;;
-  5)
+    clear
+    printf '%s\n' "${GREEN}╔══════════════════════════════════════════════╗${NC}"
+    printf '%s\n' "${GREEN}║    INSTALACIÓN COMPLETA EN SECUENCIA        ║${NC}"
+    printf '%s\n' "${GREEN}╚══════════════════════════════════════════════╝${NC}"
+    echo ""
+    printf '%s\n' "  Este proceso ejecutará en orden:"
+    printf '%s\n' "    1. Asegurar el servidor (hardening)"
+    printf '%s\n' "    2. Instalar Docker Engine"
+    printf '%s\n' "    3. Instalar Traefik + Portainer"
+    echo ""
+    if [[ $NON_INTERACTIVE == false ]]; then
+      read -r -p "  Presione Enter para continuar (Ctrl+C para cancelar)..."
+    fi
     log "Ejecutando todos los procesos secuencialmente..."
     secure_server
     install_docker
     install_traefik_portainer
     log "Todos los procesos completados. Presione Enter para volver al menú..."
+    read -r
+    ;;
+  5)
+    update_traefik_portainer
+    log "Presione Enter para volver al menú..."
     read -r
     ;;
   6)

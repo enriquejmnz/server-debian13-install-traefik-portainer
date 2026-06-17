@@ -44,6 +44,7 @@ El proyecto combina scripts Bash y una variante Ansible para configurar un servi
 - 🟢 CI test de integración básico
 - 🟡 Backup y migración de Traefik + Portainer (PRD definido)
 - 🟡 Ansible: validación operativa en VM real
+- ✅ Persistencia post-reinicio: healthcheck de Traefik + `depends_on: service_healthy` en Portainer + sub-opción "Verificación post-reinicio" (`verify_post_reboot`) en el menú opción 6 y CLI `--step post-reboot`
 
 ---
 
@@ -272,7 +273,21 @@ Tareas para implementar el módulo de backup y restauración del stack Traefik +
 
 ---
 
-## 11. Última sesión (2026-06-12)
+## 11. Persistencia post-reinicio (Traefik + Portainer)
+
+| # | Tarea | Estado |
+|---|---|---|
+| 1 | Healthcheck de Traefik en `docker-compose.yml` (`traefik healthcheck`, 10s/3s/5/30s) | ✅ |
+| 2 | `depends_on: service_healthy` en Portainer | ✅ |
+| 3 | Sub-menú dentro de opción 6 con "Chequeo general" y "Verificación post-reinicio" | ✅ |
+| 4 | Función `verify_post_reboot` (espera Docker + containers, valida UFW 80/443) | ✅ |
+| 5 | CLI: `--step post-reboot` y `--step verify` actualizado | ✅ |
+| 6 | Documentación: AGENTS.md, README.md, NOTES.md, TODO.md | ✅ |
+| 7 | Pendiente: replicar healthcheck + service_healthy en el template `docker-compose.yml.j2` de Ansible (ver ANSIBLE-MIGRATION.md) | ❌ |
+
+---
+
+## 12. Última sesión (2026-06-12)
 
 ### Completado
 - `modules/versions.env` creado para Bash (independiente de Ansible)

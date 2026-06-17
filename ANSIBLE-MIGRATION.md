@@ -449,7 +449,7 @@ proxy_subnet: "172.18.0.0/16"
 ```
 
 **`templates/`**:
-- `docker-compose.yml.j2` — Stack completo sin IPs estáticas, usando nombres de red, imágenes pinadas
+- `docker-compose.yml.j2` — Stack completo sin IPs estáticas, usando nombres de red e imágenes pinadas. Pendiente: replicar el `healthcheck` de Traefik y `depends_on: service_healthy` de Portainer para alcanzar paridad con el script Bash (ver TODO.md).
 - `traefik.yml.j2` — Configuración estática con ACME, entrypoints, providers
 - `dynamic.yml.j2` — Security headers, basicAuth (usando `{{ traefik_auth }}`), TLS options
 
@@ -633,7 +633,7 @@ TRAEFIK_VERSION=v3.7.4
 
 Ambos sistemas tienen su propio `versions.env` independiente. Actualizar una versión requiere editar ambos archivos — cambio simple, revisable en PR, sin dependencia cruzada entre Bash y Ansible.
 
-> **Importante**: El script `update_traefik.sh` (opción 4 del menú) y el playbook `update.yml` **no detectan nuevas versiones automáticamente**. Solo verifican si el digest de la imagen pinada cambió (ej: security patch de la misma versión). Para cambiar de versión (ej: de v3.7.4 a v3.8.0), hay que editar manualmente los archivos `versions.env`.
+> **Importante**: El script `update_traefik.sh` (opción 5 del menú) y el playbook `update.yml` **no detectan nuevas versiones automáticamente**. Solo verifican si el digest de la imagen pinada cambió (ej: security patch de la misma versión). Para cambiar de versión (ej: de v3.7.4 a v3.8.0), hay que editar manualmente los archivos `versions.env`.
 
 ### 6.2 Sin IPs estáticas en la red Docker
 
@@ -775,7 +775,7 @@ apt-get install -y python3
 
 ## 8. Comandos de uso
 
-### Instalación completa (equivale al menú opción 5)
+### Instalación completa (equivale al menú opción 4)
 
 ```bash
 # Con dry-run primero:

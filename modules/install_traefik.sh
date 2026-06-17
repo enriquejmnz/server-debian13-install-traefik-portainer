@@ -143,6 +143,12 @@ services:
       - proxy
     ports: ["80:80", "443:443"]
     environment: { CF_API_EMAIL: "${email_admin}" }
+    healthcheck:
+      test: ["CMD", "traefik", "healthcheck"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+      start_period: 10s
     volumes:
       - /etc/localtime:/etc/localtime:ro
       - /var/run/docker.sock:/var/run/docker.sock:ro
@@ -161,7 +167,9 @@ services:
     image: ${PORTAINER_IMAGE}
     container_name: portainer
     restart: unless-stopped
-    depends_on: [traefik]
+    depends_on:
+      traefik:
+        condition: service_healthy
     security_opt: [no-new-privileges:true]
     networks:
       - proxy
@@ -190,6 +198,8 @@ EOF
   cat >"$INSTALL_DIR/traefik-data/traefik.yml" <<EOF
 api: { dashboard: true }
 entryPoints:
+  traefik:
+    address: "127.0.0.1:8080"
   web:
     address: ":80"
     http: { redirections: { entryPoint: { to: websecure } } }
@@ -198,6 +208,7 @@ entryPoints:
     http:
       middlewares: [secureHeaders@file]
       tls: { certResolver: letsencrypt }
+ping: { entryPoint: traefik }
 providers:
   docker: { endpoint: "unix:///var/run/docker.sock", exposedByDefault: false }
   file: { directory: /configurations }
@@ -247,16 +258,16 @@ EOF
   touch "$INSTALL_DIR/traefik-data/acme.json" || error "Error al crear acme.json"
   chmod 600 "$INSTALL_DIR/traefik-data/acme.json" || error "Error al ajustar permisos de acme.json"
 
-  log "Iniciando contenedores..."
-  (cd "$INSTALL_DIR" && docker compose up -d) || error "Error al iniciar contenedores"
-
-  log "Verificando estado de los contenedores..."
-  (cd "$INSTALL_DIR" && docker compose ps) || error "Error al verificar el estado de los contenedores"
-
   if command -v ufw &>/dev/null; then
     ufw allow 80/tcp && ufw allow 443/tcp
     log "Puertos 80 y 443 abiertos en el firewall."
   fi
+
+  log "Iniciando contenedores (el primer arranque puede tardar hasta 60s)..."
+  (cd "$INSTALL_DIR" && docker compose up -d) || error "Error al iniciar contenedores"
+
+  log "Verificando estado de los contenedores..."
+  (cd "$INSTALL_DIR" && docker compose ps) || error "Error al verificar el estado de los contenedores"
 
   echo ""
   printf '%s\n' "${GREEN}╔══════════════════════════════════════════════╗${NC}"
