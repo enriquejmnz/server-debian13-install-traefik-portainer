@@ -275,9 +275,9 @@ verify_post_reboot() {
 
     local t_state t_health p_state p_health
     t_state=$(docker inspect --format '{{.State.Status}}' traefik 2>/dev/null || echo "missing")
-    t_health=$(docker inspect --format '{{.State.Health.Status}}' traefik 2>/dev/null || echo "none")
+    t_health=$(docker inspect --format '{{if .State.Health}}{{.State.Health.Status}}{{else}}none{{end}}' traefik 2>/dev/null || echo "none")
     p_state=$(docker inspect --format '{{.State.Status}}' portainer 2>/dev/null || echo "missing")
-    p_health=$(docker inspect --format '{{.State.Health.Status}}' portainer 2>/dev/null || echo "none")
+    p_health=$(docker inspect --format '{{if .State.Health}}{{.State.Health.Status}}{{else}}none{{end}}' portainer 2>/dev/null || echo "none")
 
     if [[ $t_state == "running" && ($t_health == "healthy" || $t_health == "none") ]]; then
       traefik_ok=true
