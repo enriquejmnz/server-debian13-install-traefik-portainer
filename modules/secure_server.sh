@@ -1,6 +1,31 @@
 #!/bin/bash
 # modules/secure_server.sh - Módulo para asegurar un servidor Debian soportado
 
+secure_server_set_admin_password() {
+  local target_user="$1"
+
+  echo ""
+  read -r -p "¿Desea establecer o cambiar la contraseña de ${target_user} ahora? (s/n, predeterminado: s): " set_password
+  set_password=${set_password:-s}
+  if [[ $set_password =~ ^[sS]$ ]]; then
+    while true; do
+      read -r -s -p "  Contraseña para ${target_user}: " admin_password
+      echo
+      read -r -s -p "  Confirmar contraseña: " admin_password_confirm
+      echo
+      if [[ $admin_password == "$admin_password_confirm" && -n $admin_password ]]; then
+        printf '%s\n' "${target_user}:${admin_password}" | chpasswd || error "Error al establecer la contraseña"
+        unset admin_password admin_password_confirm
+        log "Contraseña establecida para ${target_user}"
+        return 0
+      fi
+      warn "Las contraseñas no coinciden o están vacías. Inténtelo de nuevo."
+    done
+  else
+    log "No se estableció contraseña para ${target_user}. El acceso será solo por clave SSH."
+  fi
+}
+
 secure_server_create_admin_user() {
   log "Creando o configurando usuario administrador..."
 
@@ -23,6 +48,7 @@ secure_server_create_admin_user() {
         usermod -aG sudo "$admin_user" || error "Error al añadir $admin_user al grupo sudo"
         usermod -aG sshusers "$admin_user" || error "Error al añadir $admin_user al grupo sshusers"
         log "Usuario $admin_user configurado como administrador y añadido a los grupos sudo y sshusers"
+        secure_server_set_admin_password "$admin_user"
         break
       fi
       log "Por favor, ingrese un nombre de usuario diferente"
@@ -31,10 +57,11 @@ secure_server_create_admin_user() {
     fi
 
     log "Creando usuario $admin_user..."
-    adduser "$admin_user" || error "Error al crear usuario $admin_user"
+    adduser --disabled-password --gecos "" "$admin_user" || error "Error al crear usuario $admin_user"
     usermod -aG sudo "$admin_user" || error "Error al añadir $admin_user al grupo sudo"
     usermod -aG sshusers "$admin_user" || error "Error al añadir $admin_user al grupo sshusers"
     log "Usuario $admin_user creado y añadido a los grupos sudo y sshusers"
+    secure_server_set_admin_password "$admin_user"
     break
   done
 
