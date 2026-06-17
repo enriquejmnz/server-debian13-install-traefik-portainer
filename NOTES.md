@@ -34,14 +34,14 @@ Analizar estas notas para generar propuestas de mejora, identificar riesgos pote
   - El orden actual (puerto SSH → usuario admin → hardening) es el correcto para seguridad
   - Se agregó checkpoint visual antes del hardening para que el usuario revise cambios
   - Todas las opciones del menú ahora tienen banner introductorio con resumen y pausa
-- [ ] **Seguridad: Usuario Sudo y Acceso SSH**
-  - Verificar si es técnicamente correcto delegar privilegios `sudo` al administrador y evitar el uso de `root`.
-  - Confirmar si este mismo usuario puede ser el utilizado para la autenticación SSH mediante clave pública.
+- [x] **Seguridad: Usuario Sudo y Acceso SSH**
+  - ✅ Confirmado: `secure_server.sh` delega `sudo` al admin, configura acceso SSH por clave pública y restringe SSH al grupo `sshusers`.
+  - `PermitRootLogin prohibit-password` en `sshd_config`.
 - [x] **Verificación de servicios**
   - Nueva opción 6 en el menú y `--step verify` en CLI
   - Módulo `verify_services.sh`: chequea SSH, UFW, fail2ban, Docker, Traefik, Portainer, TLS, recursos
-- [ ] **Seguridad: Grupo Docker**
-  - Evaluar si, por seguridad, el usuario administrador no debe ser parte del grupo `docker`.
+- [x] **Seguridad: Grupo Docker**
+  - ✅ Evaluado: el usuario administrador no se agrega al grupo `docker`. El grupo `docker` solo se asigna explícitamente a `DOCKER_USER` en `install_docker.sh` si se configura.
 - [x] **Gestión de versiones (Traefik y Portainer)**
   - ✅ Las actualizaciones son manuales: editar `modules/versions.env` para cambiar de versión
   - ✅ `common.sh` lee `versions.env` y deriva `TRAEFIK_IMAGE`/`PORTAINER_IMAGE`

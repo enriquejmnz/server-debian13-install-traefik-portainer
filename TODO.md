@@ -28,23 +28,24 @@ El proyecto combina scripts Bash y una variante Ansible para configurar un servi
 - `destemail` de fail2ban configurable vía variable
 - `experimental: false` eliminado del daemon.json
 - `.gitignore` creado
-
-**Pendiente:**
 - ✅ Permisos restrictivos en `$INSTALL_DIR` y configs generados
 - ✅ SCRIPT_VERSION en `common.sh`
-- ✅ check_error() eliminada (código muerto)
+- ✅ `check_error()` eliminada (código muerto)
 - ✅ Validación DNS de subdominios antes de Let's Encrypt
 - ✅ Flags CLI básicos (`--help`, `--non-interactive`, `--step`, `--env-file`)
 - ✅ Soporte `.env` para preconfiguración no interactiva
-- ✅ echo-e reemplazado por printf en todo el proyecto
+- ✅ `echo -e` reemplazado por `printf` en todo el proyecto
 - ✅ Variables sin comillas verificadas (sin SC2086)
 - ✅ Indentación consistente (shfmt clean)
 - ✅ Confirmación de contraseña Traefik (segundo ingreso)
+- ✅ Persistencia post-reinicio: healthcheck de Traefik + `depends_on: service_healthy` en Portainer + sub-opción "Verificación post-reinicio" (`verify_post_reboot`) en el menú opción 6 y CLI `--step post-reboot`
+
+**Pendiente:**
 - 🟡 Evaluar docker-socket-proxy como alternativa
 - 🟢 CI test de integración básico
-- 🟡 Backup y migración de Traefik + Portainer (PRD definido)
+- 🟡 Backup y migración de Traefik + Portainer — módulo implementado; pendiente cambio de dominio y pruebas manuales
 - 🟡 Ansible: validación operativa en VM real
-- ✅ Persistencia post-reinicio: healthcheck de Traefik + `depends_on: service_healthy` en Portainer + sub-opción "Verificación post-reinicio" (`verify_post_reboot`) en el menú opción 6 y CLI `--step post-reboot`
+- 🟢 Modo dry-run (`--dry-run`)
 
 ---
 
@@ -242,7 +243,7 @@ No hay Dockerfiles propios.
 | 27 | Evaluar docker-socket-proxy | 🟡 | L | ❌ Pendiente |
 | 28 | Pinear Traefik a minor explícita | 🟢 | S | ✅ |
 | 29 | CI test de integración básico | 🟢 | M | ❌ Pendiente |
-| 30 | Indentación inconsistente en `secure_server.sh` | 🟢 | S | ❌ Pendiente |
+| 30 | Indentación inconsistente en `secure_server.sh` | 🟢 | S | ✅ |
 
 ---
 
@@ -266,9 +267,9 @@ Tareas para implementar el módulo de backup y restauración del stack Traefik +
 | # | Tarea | Prio | Esfuerzo | Estado |
 |---|---|---|---|---|
 | 31 | Crear `modules/backup_restore.sh` con `backup_stack()` y `restore_stack()` | 🟡 | M | ✅ |
-| 32 | Integrar en `main.sh`: menú (opción 7) y CLI (`--step backup`, `--step restore`) | 🟡 | S | ❌ Pendiente |
-| 33 | Validación de archivos, permisos restrictivos post-extracción y cambio de dominio opcional | 🟡 | M | ❌ Pendiente |
-| 34 | Actualizar documentación (`README.md`, `AGENTS.md`, `NOTES.md`) | 🟢 | S | ❌ Pendiente |
+| 32 | Integrar en `main.sh`: menú (opción 7) y CLI (`--step backup`, `--step restore`) | 🟡 | S | ✅ |
+| 33 | Validación de archivos, permisos restrictivos post-extracción y cambio de dominio opcional | 🟡 | M | 🟡 Parcial — falta cambio de dominio |
+| 34 | Actualizar documentación (`README.md`, `AGENTS.md`, `NOTES.md`) | 🟢 | S | ✅ |
 | 35 | Pruebas manuales de migración entre VMs (Debian 12/13) | 🟡 | M | ❌ Pendiente |
 
 ---
