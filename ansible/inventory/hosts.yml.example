@@ -1,0 +1,21 @@
+---
+# Plantilla de inventario.
+#
+# Copiala a hosts.yml antes de usar Ansible:
+#   cp ansible/inventory/hosts.yml.example ansible/inventory/hosts.yml
+#
+# hosts.yml NO se versiona (está en .gitignore) porque es específico de cada
+# máquina de control. ansible.cfg apunta a inventory/hosts.yml, así que sin
+# copiar esta plantilla no hay inventario que Ansible pueda cargar.
+#
+# Este bloque es solo un ejemplo: reemplazá 'ejemplo-debian13' por el nombre
+# real de tu servidor y ajustá IP, usuario, puerto y dominio.
+all:
+  vars:
+    ansible_python_interpreter: /usr/bin/python3
+  hosts:
+    ejemplo-debian13:
+      ansible_host: 127.0.0.1
+      ansible_user: root
+      ansible_port: 22
+      base_domain: example.com
