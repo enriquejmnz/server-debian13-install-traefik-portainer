@@ -89,7 +89,8 @@ ansible/
 ├── requirements.yml                     # Colecciones y roles de Galaxy
 │
 ├── inventory/
-│   ├── hosts.yml                        # Inventario de servidores (YAML)
+│   ├── hosts.yml.example                # Plantilla de inventario (copiar a hosts.yml)
+│   ├── hosts.yml                        # Inventario local, ignorado por git
 │   └── group_vars/
 │       ├── all.yml                      # Variables comunes a todos los hosts
 │       └── all/
