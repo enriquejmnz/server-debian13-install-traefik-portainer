@@ -62,7 +62,7 @@ server-debian13-install-traefik-portainer/
 │   ├── ansible.cfg
 │   ├── requirements.yml
 │   ├── inventory/
-│   │   ├── hosts.yml
+│   │   ├── hosts.yml.example     # Plantilla (copiar a hosts.yml, no versionado)
 │   │   └── group_vars/
 │   │       └── all/
 │   │           ├── vars.yml      # Variables no sensibles

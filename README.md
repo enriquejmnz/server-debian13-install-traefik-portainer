@@ -145,8 +145,10 @@ pip install ansible passlib jmespath
 ansible-galaxy collection install -r ansible/requirements.yml
 
 # 3. Configurar inventario:
-# El repositorio ya incluye ansible/inventory/hosts.yml con valores de ejemplo.
-# Editalo directamente con la IP y datos de conexión reales del servidor.
+# El repositorio versiona solo la plantilla ansible/inventory/hosts.yml.example.
+# Copiala y editala con la IP y datos de conexión reales del servidor:
+cp ansible/inventory/hosts.yml.example ansible/inventory/hosts.yml
+# hosts.yml es local (está en .gitignore): cada máquina de control tiene el suyo.
 
 # 4. Configurar variables:
 # Editar ansible/inventory/group_vars/all/vars.yml (variables no sensibles)
@@ -267,7 +269,8 @@ server-debian13-install-traefik-portainer/
 │   ├── ansible.cfg
 │   ├── requirements.yml      # Colecciones: community.general, community.docker, ansible.posix
 │   ├── inventory/
-│   │   ├── hosts.yml         # Inventario de servidores
+│   │   ├── hosts.yml.example # Plantilla de inventario (copiar a hosts.yml)
+│   │   ├── hosts.yml         # Inventario local, no versionado (.gitignore)
 │   │   └── group_vars/all/
 │   │       ├── vars.yml      # Variables no sensibles
 │   │       ├── vault.yml     # Secrets cifrados con ansible-vault
